@@ -13,3 +13,4 @@ build/
 # 发布用 APK (仅 apk/ 目录内)
 !apk/
 !apk/*.apk
+.kotlin/
