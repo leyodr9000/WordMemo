@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilledTonalButton
@@ -160,7 +161,14 @@ private fun StatusChip(label: String, selected: Boolean, onClick: () -> Unit) {
 
 @Composable
 private fun WordCard(word: Word, onDelete: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    // 无阴影卡片: 列表滚动时 shadow 是 GPU 开销主因
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
