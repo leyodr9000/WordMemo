@@ -39,17 +39,18 @@ class ImportViewModel @Inject constructor(
     private val _state = MutableStateFlow<ImportState>(ImportState.Idle)
     val state: StateFlow<ImportState> = _state
 
-    private var currentImage: File? = null
+    private val _currentImage = MutableStateFlow<File?>(null)
+    val currentImage: StateFlow<File?> = _currentImage
     val pendingWords: MutableStateFlow<List<ExtractedWord>> = MutableStateFlow(emptyList())
     val selectedBook: MutableStateFlow<String> = MutableStateFlow("")
 
     fun onImagePicked(file: File?) {
-        currentImage = file
+        _currentImage.value = file
         _state.value = if (file == null) ImportState.NoImage else ImportState.Idle
     }
 
     fun recognize() {
-        val img = currentImage ?: run { _state.value = ImportState.NoImage; return }
+        val img = _currentImage.value ?: run { _state.value = ImportState.NoImage; return }
         viewModelScope.launch {
             val settings = settingsRepository.settings.first()
             if (!settings.isApiConfigured) {
@@ -105,7 +106,7 @@ class ImportViewModel @Inject constructor(
     }
 
     fun reset() {
-        currentImage = null
+        _currentImage.value = null
         pendingWords.value = emptyList()
         _state.value = ImportState.Idle
     }

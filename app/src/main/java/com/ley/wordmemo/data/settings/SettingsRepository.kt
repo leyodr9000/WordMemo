@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -26,6 +27,8 @@ data class AppSettings(
     val autoSpeak: Boolean = true,
     val darkMode: String = "system", // system | light | dark
     val activeBook: String = "",     // 当前词书，空 = 全部
+    val primaryColor: Long = 0L,     // 自定义一级强调色 (ARGB), 0=默认
+    val secondaryColor: Long = 0L,   // 自定义二级强调色 (ARGB), 0=默认
 ) {
     val isApiConfigured: Boolean
         get() = apiBaseUrl.isNotBlank() && apiKey.isNotBlank() && apiModel.isNotBlank()
@@ -50,6 +53,8 @@ class SettingsRepository @Inject constructor(
         val autoSpeak = booleanPreferencesKey("auto_speak")
         val darkMode = stringPreferencesKey("dark_mode")
         val activeBook = stringPreferencesKey("active_book")
+        val primaryColor = longPreferencesKey("primary_color")
+        val secondaryColor = longPreferencesKey("secondary_color")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { p ->
@@ -62,6 +67,8 @@ class SettingsRepository @Inject constructor(
             autoSpeak = p[Keys.autoSpeak] ?: true,
             darkMode = p[Keys.darkMode] ?: "system",
             activeBook = p[Keys.activeBook] ?: "",
+            primaryColor = p[Keys.primaryColor] ?: 0L,
+            secondaryColor = p[Keys.secondaryColor] ?: 0L,
         )
     }
 
@@ -92,5 +99,13 @@ class SettingsRepository @Inject constructor(
     /** 当前词书：空串表示「全部」 */
     suspend fun setActiveBook(book: String) {
         context.dataStore.edit { p -> p[Keys.activeBook] = book }
+    }
+
+    suspend fun setPrimaryColor(argb: Long) {
+        context.dataStore.edit { p -> p[Keys.primaryColor] = argb }
+    }
+
+    suspend fun setSecondaryColor(argb: Long) {
+        context.dataStore.edit { p -> p[Keys.secondaryColor] = argb }
     }
 }

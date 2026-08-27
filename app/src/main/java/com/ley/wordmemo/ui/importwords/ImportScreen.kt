@@ -64,6 +64,7 @@ fun ImportScreen(
     viewModel: ImportViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val currentImage by viewModel.currentImage.collectAsStateWithLifecycle()
     val pending by viewModel.pendingWords.collectAsStateWithLifecycle()
     val book by viewModel.selectedBook.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -233,8 +234,43 @@ fun ImportScreen(
                     }
                 }
                 else -> {
-                    Text("选择书页照片，AI 将自动提取单词", style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    // 有已选图片: 显示预览 + 开始识别
+                    if (currentImage != null) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            ),
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                                val painter = rememberAsyncImagePainter(currentImage)
+                                Image(
+                                    painter = painter,
+                                    contentDescription = "书页预览",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(220.dp),
+                                    contentScale = ContentScale.Fit,
+                                )
+                                Spacer(Modifier.size(12.dp))
+                                Button(
+                                    onClick = { viewModel.recognize() },
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Icon(Icons.Default.Image, null)
+                                    Spacer(Modifier.size(6.dp))
+                                    Text("开始识别")
+                                }
+                                OutlinedButton(
+                                    onClick = { viewModel.reset() },
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) { Text("重新选择") }
+                            }
+                        }
+                    } else {
+                        Text("选择书页照片，AI 将自动提取单词", style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
         }

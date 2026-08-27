@@ -1,6 +1,12 @@
 package com.ley.wordmemo.ui.settings
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -10,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -216,6 +223,66 @@ fun SettingsScreen(
                         onClick = { viewModel.updateDarkMode(mode) },
                         enabled = settings.darkMode != mode,
                     ) { Text(label) }
+                }
+            }
+
+            Text("主题色（一级/二级强调色）", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "选择后立即生效",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            val selectedOption = com.ley.wordmemo.ui.theme.ThemeOptions.resolve(
+                settings.primaryColor, settings.secondaryColor
+            )
+            androidx.compose.foundation.lazy.LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                items(com.ley.wordmemo.ui.theme.ThemeOptions.all.size) { idx ->
+                    val opt = com.ley.wordmemo.ui.theme.ThemeOptions.all[idx]
+                    val isSelected = opt == selectedOption
+                    androidx.compose.material3.Card(
+                        modifier = Modifier.width(96.dp),
+                        colors = androidx.compose.material3.CardDefaults.cardColors(
+                            containerColor = if (isSelected)
+                                MaterialTheme.colorScheme.primaryContainer
+                            else MaterialTheme.colorScheme.surfaceVariant,
+                        ),
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.updateTheme(opt)
+                                }
+                                .padding(10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(22.dp)
+                                        .background(opt.primary, CircleShape)
+                                )
+                                Spacer(Modifier.size(4.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(22.dp)
+                                        .background(opt.secondary, CircleShape)
+                                )
+                            }
+                            Spacer(Modifier.size(6.dp))
+                            Text(
+                                opt.name,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
                 }
             }
         }

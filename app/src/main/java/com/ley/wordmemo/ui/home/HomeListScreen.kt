@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -34,6 +35,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ley.wordmemo.data.model.Word
 import com.ley.wordmemo.data.model.WordStatus
+import com.ley.wordmemo.ui.components.ProgressRing
 
 /**
  * 列表模式（主 Tab 第 1 页）。
@@ -59,6 +61,36 @@ fun HomeListScreen(
             placeholder = { Text("搜索单词或释义") },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
         ) {}
+
+        // 学习进度统计卡片
+        val total = (counts[WordStatus.NEW] ?: 0) + (counts[WordStatus.MASTERED] ?: 0) + (counts[WordStatus.FORGOTTEN] ?: 0)
+        val mastered = counts[WordStatus.MASTERED] ?: 0
+        val progress = if (total == 0) 0f else mastered.toFloat() / total
+        androidx.compose.material3.Card(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ProgressRing(
+                    progress = progress,
+                    sizeDp = 96.dp,
+                    strokeWidth = 8.dp,
+                    label = "掌握率",
+                )
+                Spacer(Modifier.width(20.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("学习进度", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.size(6.dp))
+                    ProgressStatRow("生词", counts[WordStatus.NEW] ?: 0, total)
+                    Spacer(Modifier.size(4.dp))
+                    ProgressStatRow("熟练", counts[WordStatus.MASTERED] ?: 0, total)
+                    Spacer(Modifier.size(4.dp))
+                    ProgressStatRow("忘记", counts[WordStatus.FORGOTTEN] ?: 0, total)
+                }
+            }
+        }
 
         // 状态筛选 chips
         Row(
@@ -180,4 +212,19 @@ private fun statusLabel(status: WordStatus): String = when (status) {
     WordStatus.NEW -> "生词"
     WordStatus.MASTERED -> "熟练"
     WordStatus.FORGOTTEN -> "忘记"
+}
+
+@Composable
+private fun ProgressStatRow(label: String, count: Int, total: Int) {
+    val pct = if (total == 0) 0 else (count * 100) / total
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(48.dp))
+        androidx.compose.material3.LinearProgressIndicator(
+            progress = { if (total == 0) 0f else count.toFloat() / total },
+            modifier = Modifier.weight(1f).height(8.dp),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text("$count ($pct%)", style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 }

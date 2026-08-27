@@ -81,6 +81,14 @@ class SettingsViewModel @Inject constructor(
     fun updateDarkMode(mode: String) = viewModelScope.launch { repository.updateDarkMode(mode) }
     fun updatePrompt(p: String) = viewModelScope.launch { repository.updatePrompt(p) }
 
+    /** 应用主题色方案（一级+二级强调色一起存） */
+    fun updateTheme(option: com.ley.wordmemo.ui.theme.ThemeColorOption) {
+        viewModelScope.launch {
+            repository.setPrimaryColor(option.primaryArgb)
+            repository.setSecondaryColor(option.secondaryArgb)
+        }
+    }
+
     /** 使用当前表单里的 Base URL + Key 拉取可用模型列表 */
     fun fetchModels() {
         val f = apiForm.value

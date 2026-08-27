@@ -3,6 +3,12 @@ package com.ley.wordmemo.ui.study
 import android.speech.tts.TextToSpeech
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -153,6 +159,20 @@ fun StudyScreen(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     ),
                 ) {
+                    androidx.compose.animation.AnimatedContent(
+                        targetState = word.id,
+                        transitionSpec = {
+                            // 滑入滑出过渡动画
+                            if (targetState > initialState) {
+                                (slideInHorizontally { it / 2 } + fadeIn())
+                                    .togetherWith(slideOutHorizontally { -it / 2 } + fadeOut())
+                            } else {
+                                (slideInHorizontally { -it / 2 } + fadeIn())
+                                    .togetherWith(slideOutHorizontally { it / 2 } + fadeOut())
+                            }
+                        },
+                        label = "cardSwitch",
+                    ) { _ ->
                     Column(
                         modifier = Modifier.fillMaxSize().padding(24.dp),
                         verticalArrangement = Arrangement.Center,
@@ -230,6 +250,7 @@ fun StudyScreen(
                                 Text("显示答案")
                             }
                         }
+                    }
                     }
                 }
 

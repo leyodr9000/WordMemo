@@ -23,7 +23,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
-            WordMemoTheme(darkMode = settings.darkMode) {
+            WordMemoTheme(
+                darkMode = settings.darkMode,
+                customPrimary = settings.primaryColor,
+                customSecondary = settings.secondaryColor,
+            ) {
                 AppNavHost(navController = rememberNavController())
             }
         }
