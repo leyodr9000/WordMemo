@@ -49,6 +49,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -88,7 +90,9 @@ fun StudyScreen(
         }
     }
 
-    var offsetX by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    // 卡片拖拽位移: 用 Animatable 平滑驱动, 松手回弹或飞出
+    val offsetX = remember { androidx.compose.animation.core.Animatable(0f) }
+    val dragScope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -141,19 +145,42 @@ fun StudyScreen(
                             detectHorizontalDragGestures(
                                 onHorizontalDrag = { change, drag ->
                                     change.consume()
-                                    offsetX += drag
+                                    dragScope.launch { offsetX.snapTo(offsetX.value + drag) }
                                 },
                                 onDragEnd = {
-                                    if (offsetX < -80f) viewModel.next()
-                                    else if (offsetX > 80f) viewModel.previous()
-                                    offsetX = 0f
+                                    val dx = offsetX.value
+                                    val flyOut = 900f
+                                    if (dx < -80f) {
+                                        // 向左滑: 飞出后进入下一个词
+                                        dragScope.launch {
+                                            offsetX.animateTo(-flyOut, androidx.compose.animation.core.tween(180))
+                                            viewModel.next()
+                                            offsetX.snapTo(flyOut)
+                                            offsetX.animateTo(0f, androidx.compose.animation.core.spring())
+                                        }
+                                    } else if (dx > 80f) {
+                                        // 向右滑: 飞出后回到上一个词
+                                        dragScope.launch {
+                                            offsetX.animateTo(flyOut, androidx.compose.animation.core.tween(180))
+                                            viewModel.previous()
+                                            offsetX.snapTo(-flyOut)
+                                            offsetX.animateTo(0f, androidx.compose.animation.core.spring())
+                                        }
+                                    } else {
+                                        // 未过阈值: 回弹
+                                        dragScope.launch {
+                                            offsetX.animateTo(0f, androidx.compose.animation.core.spring())
+                                        }
+                                    }
                                 },
-                                onDragCancel = { offsetX = 0f },
+                                onDragCancel = {
+                                    dragScope.launch { offsetX.animateTo(0f, androidx.compose.animation.core.spring()) }
+                                },
                             )
                         }
                         .graphicsLayer {
-                            translationX = offsetX
-                            rotationZ = offsetX / 30f
+                            translationX = offsetX.value
+                            rotationZ = offsetX.value / 90f
                         },
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -162,14 +189,9 @@ fun StudyScreen(
                     androidx.compose.animation.AnimatedContent(
                         targetState = word.id,
                         transitionSpec = {
-                            // 滑入滑出过渡动画
-                            if (targetState > initialState) {
-                                (slideInHorizontally { it / 2 } + fadeIn())
-                                    .togetherWith(slideOutHorizontally { -it / 2 } + fadeOut())
-                            } else {
-                                (slideInHorizontally { -it / 2 } + fadeIn())
-                                    .togetherWith(slideOutHorizontally { it / 2 } + fadeOut())
-                            }
+                            // 只淡入淡出: 位移由手势/Animatable 负责, 避免双重动画
+                            fadeIn(androidx.compose.animation.core.tween(160))
+                                .togetherWith(fadeOut(androidx.compose.animation.core.tween(160)))
                         },
                         label = "cardSwitch",
                     ) { _ ->

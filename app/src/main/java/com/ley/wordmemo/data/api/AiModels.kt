@@ -68,6 +68,20 @@ data class ModelsResponse(
     )
 }
 
+/** 流式 SSE 响应分片（chat/completions stream） */
+@Serializable
+data class ChatStreamChunk(
+    val choices: List<StreamChoice> = emptyList(),
+) {
+    @Serializable
+    data class StreamChoice(
+        val delta: StreamDelta? = null,
+    ) {
+        @Serializable
+        data class StreamDelta(val content: String = "")
+    }
+}
+
 /** 解析 AI 返回文本中的 JSON 数组（容忍 markdown 代码块包裹） */
 object AiParser {
     private val json = Json { ignoreUnknownKeys = true }

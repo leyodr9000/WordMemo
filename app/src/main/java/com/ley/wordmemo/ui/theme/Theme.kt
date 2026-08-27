@@ -8,52 +8,58 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 
+// ============ 高级配色（低饱和、耐看） ============
 private val LightColors = lightColorScheme(
-    primary = Color(0xFF2E7D32),
+    primary = Color(0xFF4F46E5),          // Indigo-600 靛蓝
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFB7EFB8),
-    onPrimaryContainer = Color(0xFF002105),
-    secondary = Color(0xFF52634F),
+    primaryContainer = Color(0xFFE0E7FF), // Indigo-100
+    onPrimaryContainer = Color(0xFF1E1B4B),
+    secondary = Color(0xFF64748B),        // Slate-500
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFD5E8CE),
-    onSecondaryContainer = Color(0xFF101F0F),
-    tertiary = Color(0xFF39656B),
+    secondaryContainer = Color(0xFFE2E8F0),
+    onSecondaryContainer = Color(0xFF1E293B),
+    tertiary = Color(0xFF0D9488),         // Teal-600
     onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFBCEBF1),
-    onTertiaryContainer = Color(0xFF002023),
-    background = Color(0xFFF6FBF1),
-    surface = Color(0xFFF6FBF1),
-    surfaceVariant = Color(0xFFDFE4DA),
-    onSurfaceVariant = Color(0xFF43483F),
+    tertiaryContainer = Color(0xFFCCFBF1),
+    onTertiaryContainer = Color(0xFF042F2E),
+    background = Color(0xFFF8FAFC),       // 冷白
+    onBackground = Color(0xFF0F172A),
+    surface = Color(0xFFF8FAFC),
+    onSurface = Color(0xFF0F172A),
+    surfaceVariant = Color(0xFFEEF2F7),
+    onSurfaceVariant = Color(0xFF475569),
+    outline = Color(0xFF94A3B8),
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFF9CD59D),
-    onPrimary = Color(0xFF00390C),
-    primaryContainer = Color(0xFF155221),
-    onPrimaryContainer = Color(0xFFB7EFB8),
-    secondary = Color(0xFFB9CCB3),
-    onSecondary = Color(0xFF243524),
-    secondaryContainer = Color(0xFF3A4B39),
-    onSecondaryContainer = Color(0xFFD5E8CE),
-    tertiary = Color(0xFF9CCFD6),
-    onTertiary = Color(0xFF00363D),
-    tertiaryContainer = Color(0xFF1F4D53),
-    onTertiaryContainer = Color(0xFFBCEBF1),
-    background = Color(0xFF101411),
-    surface = Color(0xFF101411),
-    surfaceVariant = Color(0xFF43483F),
-    onSurfaceVariant = Color(0xFFC3C8BE),
+    primary = Color(0xFF818CF8),          // Indigo-400
+    onPrimary = Color(0xFF1E1B4B),
+    primaryContainer = Color(0xFF3730A3),
+    onPrimaryContainer = Color(0xFFE0E7FF),
+    secondary = Color(0xFF94A3B8),        // Slate-400
+    onSecondary = Color(0xFF1E293B),
+    secondaryContainer = Color(0xFF334155),
+    onSecondaryContainer = Color(0xFFE2E8F0),
+    tertiary = Color(0xFF2DD4BF),         // Teal-400
+    onTertiary = Color(0xFF042F2E),
+    tertiaryContainer = Color(0xFF115E59),
+    onTertiaryContainer = Color(0xFFCCFBF1),
+    background = Color(0xFF0F172A),       // 深蓝黑
+    onBackground = Color(0xFFE2E8F0),
+    surface = Color(0xFF0F172A),
+    onSurface = Color(0xFFE2E8F0),
+    surfaceVariant = Color(0xFF1E293B),
+    onSurfaceVariant = Color(0xFF94A3B8),
+    outline = Color(0xFF475569),
 )
 
-/** 预设主题色板（一级/二级强调色可选） */
+/** 预设主题色板（低饱和高级感） */
 data class ThemeColorOption(
     val name: String,
     val primary: Color,
     val secondary: Color,
     val tertiary: Color,
 ) {
-    /** ARGB Long，用于与 DataStore 存取 */
     val primaryArgb: Long get() = primary.toArgb().toLong() and 0xFFFFFFFFL
     val secondaryArgb: Long get() = secondary.toArgb().toLong() and 0xFFFFFFFFL
 
@@ -63,19 +69,18 @@ data class ThemeColorOption(
 }
 
 object ThemeOptions {
-    val Green = ThemeColorOption("薄荷绿", Color(0xFF2E7D32), Color(0xFF52634F), Color(0xFF39656B))
-    val Blue = ThemeColorOption("蔚蓝", Color(0xFF1565C0), Color(0xFF546E7A), Color(0xFF00695C))
-    val Orange = ThemeColorOption("暖橙", Color(0xFFE65100), Color(0xFF795548), Color(0xFF6D4C41))
-    val Purple = ThemeColorOption("紫罗兰", Color(0xFF6A1B9A), Color(0xFF5E35B1), Color(0xFF37474F))
-    val Pink = ThemeColorOption("樱粉", Color(0xFFC2185B), Color(0xFFE91E63), Color(0xFF8D6E63))
-    val Dark = ThemeColorOption("曜石黑", Color(0xFF37474F), Color(0xFF455A64), Color(0xFF607D8B))
-    val Red = ThemeColorOption("中国红", Color(0xFFC62828), Color(0xFFD32F2F), Color(0xFF6D4C41))
+    val Indigo = ThemeColorOption("靛蓝", Color(0xFF4F46E5), Color(0xFF64748B), Color(0xFF0D9488))
+    val Ocean = ThemeColorOption("海洋", Color(0xFF0284C7), Color(0xFF64748B), Color(0xFF0D9488))
+    val Sand = ThemeColorOption("沙丘", Color(0xFFB45309), Color(0xFF8B5E34), Color(0xFF4B5563))
+    val Violet = ThemeColorOption("紫晶", Color(0xFF7C3AED), Color(0xFF8B5CF6), Color(0xFF0EA5E9))
+    val Rose = ThemeColorOption("玫瑰", Color(0xFFBE185D), Color(0xFF9D174D), Color(0xFF475569))
+    val Night = ThemeColorOption("夜幕", Color(0xFF1E3A5F), Color(0xFF334155), Color(0xFF0D9488))
+    val Sage = ThemeColorOption("鼠尾草", Color(0xFF3F6212), Color(0xFF6B7280), Color(0xFF0F766E))
 
-    val all = listOf(Green, Blue, Orange, Purple, Pink, Dark, Red)
+    val all = listOf(Indigo, Ocean, Sand, Violet, Rose, Night, Sage)
 
-    /** 根据 DataStore 里存的 ARGB 找到匹配预设；匹配不到用默认绿 */
     fun resolve(customPrimary: Long, customSecondary: Long): ThemeColorOption =
-        all.firstOrNull { it.matches(customPrimary, customSecondary) } ?: Green
+        all.firstOrNull { it.matches(customPrimary, customSecondary) } ?: Indigo
 }
 
 @Composable
