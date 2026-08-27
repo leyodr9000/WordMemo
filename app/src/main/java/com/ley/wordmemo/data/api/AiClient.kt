@@ -101,6 +101,33 @@ class AiClient @Inject constructor() {
         }
     }
 
+    /**
+     * 拉取可用模型列表（GET /models，OpenAI 兼容）。
+     */
+    suspend fun fetchModels(settings: AppSettings): List<String> {
+        require(settings.isApiConfigured) { "请先配置 API" }
+        val baseUrl = settings.apiBaseUrl.trimEnd('/')
+        val url = "$baseUrl/models"
+        val request = Request.Builder()
+            .url(url)
+            .addHeader("Authorization", "Bearer ${settings.apiKey}")
+            .addHeader("Content-Type", "application/json")
+            .get()
+            .build()
+        okHttp.newCall(request).execute().use { resp ->
+            if (!resp.isSuccessful) {
+                val err = resp.body?.string().orEmpty()
+                throw RuntimeException("拉取模型失败 HTTP ${resp.code}: ${err.take(200)}")
+            }
+            val raw = resp.body?.string().orEmpty()
+            return try {
+                json.decodeFromString<ModelsResponse>(raw).data.map { it.id }.filter { it.isNotBlank() }
+            } catch (e: Exception) {
+                throw RuntimeException("模型列表格式解析失败: ${e.message}")
+            }
+        }
+    }
+
     private fun String.toRequestBody(type: okhttp3.MediaType?): okhttp3.RequestBody =
         okhttp3.RequestBody.create(type, this)
 

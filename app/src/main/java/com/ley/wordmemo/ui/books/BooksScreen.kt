@@ -49,7 +49,7 @@ import com.ley.wordmemo.data.model.BookStat
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BooksScreen(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     viewModel: BooksViewModel = hiltViewModel(),
 ) {
     val books by viewModel.books.collectAsStateWithLifecycle()
@@ -65,8 +65,10 @@ fun BooksScreen(
             TopAppBar(
                 title = { Text("单词书管理") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                    if (onBack != null) {
+                        IconButton(onClick = { onBack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        }
                     }
                 },
             )

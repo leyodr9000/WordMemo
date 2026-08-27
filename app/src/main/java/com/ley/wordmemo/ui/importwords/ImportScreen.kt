@@ -54,7 +54,7 @@ import java.io.FileOutputStream
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImportScreen(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     viewModel: ImportViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -92,8 +92,10 @@ fun ImportScreen(
             TopAppBar(
                 title = { Text("拍照导入") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
+                    if (onBack != null) {
+                        IconButton(onClick = { onBack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
+                        }
                     }
                 },
             )
@@ -184,7 +186,7 @@ fun ImportScreen(
                     ) {
                         Text("导入成功：${s.count} 个单词 🎉", style = MaterialTheme.typography.titleMedium)
                         Spacer(Modifier.size(12.dp))
-                        Button(onClick = onBack) { Text("完成") }
+                        Button(onClick = { onBack?.invoke() }) { Text("完成") }
                     }
                 }
                 else -> {

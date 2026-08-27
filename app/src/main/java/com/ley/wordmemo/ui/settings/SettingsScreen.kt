@@ -2,6 +2,8 @@ package com.ley.wordmemo.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,10 +16,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -26,26 +31,23 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val apiForm by viewModel.apiForm.collectAsStateWithLifecycle()
+    val modelsState by viewModel.modelsState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     Scaffold(
@@ -53,8 +55,10 @@ fun SettingsScreen(
             TopAppBar(
                 title = { Text("设置") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
+                    if (onBack != null) {
+                        IconButton(onClick = { onBack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
+                        }
                     }
                 },
             )
@@ -99,6 +103,61 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
+
+            // 获取可用模型列表
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    "可用模型（自动拉取）",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedButton(
+                    onClick = { viewModel.fetchModels() },
+                    enabled = !modelsState.loading,
+                ) {
+                    if (modelsState.loading) {
+                        androidx.compose.material3.CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                        )
+                        Spacer(Modifier.size(6.dp))
+                        Text("拉取中…")
+                    } else {
+                        Text("获取可用模型")
+                    }
+                }
+            }
+
+            modelsState.error?.let {
+                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            }
+            if (modelsState.models.isNotEmpty()) {
+                Text(
+                    "点击模型填入上方：",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                // 模型列表（可勾选，点击填入）
+                androidx.compose.foundation.layout.FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    modelsState.models.forEach { m ->
+                        androidx.compose.material3.FilterChip(
+                            selected = apiForm.model == m,
+                            onClick = { viewModel.selectModel(m) },
+                            label = { Text(m, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        )
+                    }
+                }
+                Spacer(Modifier.size(8.dp))
+            }
+
             apiForm.error?.let {
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }

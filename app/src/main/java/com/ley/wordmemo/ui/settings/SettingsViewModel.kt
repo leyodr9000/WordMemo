@@ -2,9 +2,11 @@ package com.ley.wordmemo.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ley.wordmemo.data.api.AiClient
 import com.ley.wordmemo.data.settings.AppSettings
 import com.ley.wordmemo.data.settings.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -12,6 +14,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 data class ApiFormState(
@@ -23,15 +26,23 @@ data class ApiFormState(
     val error: String? = null,
 )
 
+data class ModelsState(
+    val loading: Boolean = false,
+    val models: List<String> = emptyList(),
+    val error: String? = null,
+)
+
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val repository: SettingsRepository,
+    private val aiClient: AiClient,
 ) : ViewModel() {
 
     val settings: StateFlow<AppSettings> = repository.settings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppSettings())
 
     val apiForm = MutableStateFlow(ApiFormState())
+    val modelsState = MutableStateFlow(ModelsState())
 
     init {
         viewModelScope.launch {
@@ -69,4 +80,32 @@ class SettingsViewModel @Inject constructor(
     fun updateAutoSpeak(v: Boolean) = viewModelScope.launch { repository.updateAutoSpeak(v) }
     fun updateDarkMode(mode: String) = viewModelScope.launch { repository.updateDarkMode(mode) }
     fun updatePrompt(p: String) = viewModelScope.launch { repository.updatePrompt(p) }
+
+    /** 使用当前表单里的 Base URL + Key 拉取可用模型列表 */
+    fun fetchModels() {
+        val f = apiForm.value
+        if (f.baseUrl.isBlank() || f.apiKey.isBlank()) {
+            modelsState.value = ModelsState(error = "请先填写 Base URL 和 API Key")
+            return
+        }
+        viewModelScope.launch {
+            modelsState.value = ModelsState(loading = true)
+            try {
+                val testSettings = com.ley.wordmemo.data.settings.AppSettings(
+                    apiBaseUrl = f.baseUrl.trimEnd('/'),
+                    apiKey = f.apiKey.trim(),
+                    apiModel = f.model,
+                )
+                val models = withContext(Dispatchers.IO) { aiClient.fetchModels(testSettings) }
+                modelsState.value = ModelsState(models = models)
+            } catch (e: Exception) {
+                modelsState.value = ModelsState(error = e.message ?: "拉取失败")
+            }
+        }
+    }
+
+    /** 勾选模型并填入表单 */
+    fun selectModel(model: String) {
+        apiForm.value = apiForm.value.copy(model = model)
+    }
 }
