@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
@@ -64,6 +66,8 @@ fun SettingsScreen(
     val apiForm by viewModel.apiForm.collectAsStateWithLifecycle()
     val modelsState by viewModel.modelsState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    var keyVisible by remember { mutableStateOf(false) }
+    var settingsCategory by remember { mutableStateOf(0) }  // 0=AI 1=学习 2=外观
     // 自定义取色对话框状态 (哪一级, 当前ARGB)
     var showPicker by remember { mutableStateOf<Pair<String, Long>?>(null) }
 
@@ -89,6 +93,18 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            // ===== 一级分类菜单 =====
+            androidx.compose.material3.TabRow(selectedTabIndex = settingsCategory) {
+                listOf("AI 配置", "学习", "外观").forEachIndexed { i, label ->
+                    androidx.compose.material3.Tab(
+                        selected = settingsCategory == i,
+                        onClick = { settingsCategory = i },
+                        text = { Text(label) },
+                    )
+                }
+            }
+
+            if (settingsCategory == 0) {
             // ===== AI API 配置 =====
             Text("AI 识图 API（核心）", style = MaterialTheme.typography.titleMedium)
             Text(
@@ -111,6 +127,21 @@ fun SettingsScreen(
                 label = { Text("API Key") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                visualTransformation = if (keyVisible)
+                    androidx.compose.ui.text.input.VisualTransformation.None
+                else
+                    androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
+                ),
+                trailingIcon = {
+                    IconButton(onClick = { keyVisible = !keyVisible }) {
+                        Icon(
+                            if (keyVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = if (keyVisible) "隐藏" else "显示",
+                        )
+                    }
+                },
             )
             OutlinedTextField(
                 value = apiForm.model,
@@ -192,6 +223,9 @@ fun SettingsScreen(
                 }
             }
 
+            } // end AI 配置
+
+            if (settingsCategory == 1) {
             // ===== 学习设置 =====
             Text("学习", style = MaterialTheme.typography.titleMedium)
 
@@ -270,6 +304,9 @@ fun SettingsScreen(
                 }
             }
 
+            } // end 学习
+
+            if (settingsCategory == 2) {
             Text("深色模式", style = MaterialTheme.typography.titleMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("system" to "跟随系统", "light" to "浅色", "dark" to "深色").forEach { (mode, label) ->
@@ -427,6 +464,7 @@ fun SettingsScreen(
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("恢复默认主题") }
+            } // end 外观
         }
     }
 

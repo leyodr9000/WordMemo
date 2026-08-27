@@ -61,6 +61,7 @@ import java.io.FileOutputStream
 @Composable
 fun ImportScreen(
     onBack: (() -> Unit)?,
+    initialMode: String = "",   // 从加号菜单进入: "camera" | "gallery" | ""
     viewModel: ImportViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -128,6 +129,14 @@ fun ImportScreen(
             startCamera()
         } else {
             cameraPermission.launchPermissionRequest()
+        }
+    }
+
+    // 从加号菜单进入时自动触发对应入口
+    androidx.compose.runtime.LaunchedEffect(initialMode) {
+        when (initialMode) {
+            "camera" -> launchCamera()
+            "gallery" -> pickImage.launch("image/*")
         }
     }
 

@@ -42,7 +42,7 @@ fun MainTabsScreen(
     onOpenStudy: () -> Unit,
     navController: androidx.navigation.NavHostController,
 ) {
-    val pagerState = rememberPagerState(pageCount = { 5 })
+    val pagerState = rememberPagerState(pageCount = { 4 })
     val scope = rememberCoroutineScope()
     val settledPage by remember { derivedStateOf { pagerState.settledPage } }
 
@@ -55,11 +55,18 @@ fun MainTabsScreen(
         ) { page ->
             key(page) {
                 when (page) {
-                    0 -> HomeListScreen(onOpenStudy = onOpenStudy)
-                    1 -> ImportScreen(onBack = null)
-                    2 -> BooksScreen(onBack = null)
-                    3 -> ChatScreen(onBack = null)
-                    4 -> SettingsScreen(onBack = null)
+                    0 -> HomeListScreen(
+                        onOpenStudy = onOpenStudy,
+                        onOpenImport = { mode ->
+                            when (mode) {
+                                "json" -> scope.launch { pagerState.scrollToPage(1) }  // 词书页有 JSON 导入
+                                else -> navController.navigate("import?mode=$mode")
+                            }
+                        },
+                    )
+                    1 -> BooksScreen(onBack = null)
+                    2 -> ChatScreen(onBack = null)
+                    3 -> SettingsScreen(onBack = null)
                 }
             }
         }
@@ -73,24 +80,18 @@ fun MainTabsScreen(
             NavigationBarItem(
                 selected = settledPage == 1,
                 onClick = { scope.launch { pagerState.scrollToPage(1) } },
-                icon = { Icon(Icons.Default.Add, null) },
-                label = { Text("导入") },
-            )
-            NavigationBarItem(
-                selected = settledPage == 2,
-                onClick = { scope.launch { pagerState.scrollToPage(2) } },
                 icon = { Icon(Icons.Default.MenuBook, null) },
                 label = { Text("词书") },
             )
             NavigationBarItem(
-                selected = settledPage == 3,
-                onClick = { scope.launch { pagerState.scrollToPage(3) } },
+                selected = settledPage == 2,
+                onClick = { scope.launch { pagerState.scrollToPage(2) } },
                 icon = { Icon(Icons.Default.SmartToy, null) },
                 label = { Text("AI") },
             )
             NavigationBarItem(
-                selected = settledPage == 4,
-                onClick = { scope.launch { pagerState.scrollToPage(4) } },
+                selected = settledPage == 3,
+                onClick = { scope.launch { pagerState.scrollToPage(3) } },
                 icon = { Icon(Icons.Default.Settings, null) },
                 label = { Text("设置") },
             )

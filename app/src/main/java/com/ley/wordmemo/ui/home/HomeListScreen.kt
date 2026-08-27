@@ -2,6 +2,7 @@ package com.ley.wordmemo.ui.home
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -15,11 +16,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -54,23 +58,54 @@ import com.ley.wordmemo.ui.components.ProgressRing
 @Composable
 fun HomeListScreen(
     onOpenStudy: () -> Unit,
+    onOpenImport: (String) -> Unit = {},   // 进入导入页: "camera"|"gallery"|"json"
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
+    // ===== 右上角加号下拉菜单 (微信风格入口) =====
+    var menuExpanded by remember { mutableStateOf(false) }
     val words by viewModel.words.collectAsStateWithLifecycle()
     val counts by viewModel.counts.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val hideMastered by viewModel.hideMastered.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        SearchBar(
-            query = (uiState.filter as? HomeFilter.Query)?.text ?: "",
-            onQueryChange = { viewModel.setQuery(it) },
-            onSearch = { },
-            onActiveChange = { },
-            active = uiState.isSearching,
-            placeholder = { Text("搜索单词或释义") },
+        Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-        ) {}
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SearchBar(
+                query = (uiState.filter as? HomeFilter.Query)?.text ?: "",
+                onQueryChange = { viewModel.setQuery(it) },
+                onSearch = { },
+                onActiveChange = { },
+                active = uiState.isSearching,
+                placeholder = { Text("搜索单词或释义") },
+                modifier = Modifier.weight(1f),
+            ) {}
+            Spacer(Modifier.width(4.dp))
+            Box {
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(Icons.Default.Add, "导入")
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("📷 拍照识别导入") },
+                        onClick = { menuExpanded = false; onOpenImport("camera") },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("🖼️ 从相册选择") },
+                        onClick = { menuExpanded = false; onOpenImport("gallery") },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("📄 导入 JSON 词书") },
+                        onClick = { menuExpanded = false; onOpenImport("json") },
+                    )
+                }
+            }
+        }
 
         // 学习进度统计卡片
         val total = (counts[WordStatus.NEW] ?: 0) + (counts[WordStatus.MASTERED] ?: 0) + (counts[WordStatus.FORGOTTEN] ?: 0)

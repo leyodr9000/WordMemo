@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -45,6 +46,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -218,57 +220,78 @@ fun StudyScreen(
                     },
                 )
 
-                Spacer(Modifier.size(16.dp))
+                Spacer(Modifier.size(14.dp))
 
-                // ===== 底部操作 (网页版: 认识/忘记常驻 + 上/下翻页) =====
-                if (flipped) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        FilledTonalButton(
-                            onClick = {
-                                viewModel.onKnown()
-                                flipped = false
-                                flipScope.launch { flipProgress.snapTo(0f) }
-                            },
-                            colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                            ),
-                        ) {
-                            Icon(Icons.Default.Check, null)
-                            Spacer(Modifier.width(6.dp))
-                            Text("认识")
-                        }
-                        OutlinedButton(
-                            onClick = {
-                                viewModel.onForgotten()
-                                flipped = false
-                                flipScope.launch { flipProgress.snapTo(0f) }
-                            },
-                        ) {
-                            Icon(Icons.Default.Close, null, tint = MaterialTheme.colorScheme.error)
-                            Spacer(Modifier.width(6.dp))
-                            Text("忘记")
-                        }
+                // ===== 标熟操作 (网页版 card-rating-actions: 常驻两道大按钮) =====
+                // 标完自动进下一词, 同时翻回正面
+                fun rate(known: Boolean) {
+                    flipScope.launch {
+                        if (known) viewModel.onKnown() else viewModel.onForgotten()
+                        flipped = false
+                        flipProgress.snapTo(0f)
                     }
-                } else {
-                    Text(
-                        "点击卡片翻转查看释义",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 }
 
-                Spacer(Modifier.size(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    // 「仍陌生 ←」 红色 (网页版 btn-rating-unfamiliar)
+                    OutlinedButton(
+                        onClick = { rate(false) },
+                        modifier = Modifier.weight(1f).height(52.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error,
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.6f),
+                        ),
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.NavigateBefore, null)
+                        Spacer(Modifier.width(4.dp))
+                        Text("仍陌生")
+                    }
+                    // 「已掌握 →」 绿色 (网页版 btn-rating-mastered)
+                    Button(
+                        onClick = { rate(true) },
+                        modifier = Modifier.weight(1f).height(52.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                        ),
+                    ) {
+                        Text("已掌握")
+                        Spacer(Modifier.width(4.dp))
+                        Icon(Icons.AutoMirrored.Filled.NavigateNext, null)
+                    }
+                }
 
+                Spacer(Modifier.size(6.dp))
+
+                // 翻页提示 (网页版 card-pagination)
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    OutlinedButton(onClick = { viewModel.previous() }) {
+                    TextButton(onClick = { viewModel.previous() }, enabled = true) {
                         Icon(Icons.AutoMirrored.Filled.NavigateBefore, null)
                         Text("上一词")
                     }
-                    OutlinedButton(onClick = { viewModel.next() }) {
+                    if (!flipped) {
+                        Text(
+                            "点击卡片翻转",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        Text(
+                            "点击卡片翻回",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    TextButton(onClick = { viewModel.next() }) {
                         Text("下一词")
                         Icon(Icons.AutoMirrored.Filled.NavigateNext, null)
                     }
@@ -302,7 +325,11 @@ private fun FlipCard3D(
                     rotationY = flipAngle.coerceIn(-180f, 180f)
                     cameraDistance = 12f * density
                 }
-                .clickable(onClick = onFlip)
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null,  // 无涟漪矩形, 避免与滑动手势视觉重叠
+                    onClick = onFlip,
+                )
         ),
         contentAlignment = Alignment.Center,
     ) {
