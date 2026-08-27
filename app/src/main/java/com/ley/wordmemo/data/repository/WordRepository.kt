@@ -32,6 +32,10 @@ class WordRepository @Inject constructor(
 
     suspend fun update(word: Word) = wordDao.update(word)
 
+    /** 快速变更词状态(列表/卡片用), 同时刷新 updatedAt */
+    suspend fun setStatus(id: Long, status: com.ley.wordmemo.data.model.WordStatus) =
+        wordDao.updateStatus(id, status.dbValue, System.currentTimeMillis())
+
     suspend fun delete(word: Word) = wordDao.delete(word)
 
     suspend fun deleteAll() = wordDao.deleteAll()

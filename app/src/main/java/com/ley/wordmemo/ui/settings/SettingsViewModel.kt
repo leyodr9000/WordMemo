@@ -80,6 +80,7 @@ class SettingsViewModel @Inject constructor(
     fun updateDailyGoal(goal: Int) = viewModelScope.launch { repository.updateDailyGoal(goal) }
     fun updateSelfTest(v: Boolean) = viewModelScope.launch { repository.setSelfTest(v) }
     fun updateSpeechVoice(v: String) = viewModelScope.launch { repository.setSpeechVoice(v) }
+    fun updateHideMasteredTranslation(v: Boolean) = viewModelScope.launch { repository.setHideMasteredTranslation(v) }
     fun updateAutoSpeak(v: Boolean) = viewModelScope.launch { repository.updateAutoSpeak(v) }
     fun updateDarkMode(mode: String) = viewModelScope.launch { repository.updateDarkMode(mode) }
     fun updatePrompt(p: String) = viewModelScope.launch { repository.updatePrompt(p) }

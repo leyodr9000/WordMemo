@@ -242,6 +242,22 @@ fun SettingsScreen(
                 )
             }
 
+            // 隐藏熟练词翻译 (网页版 hide-mastered-checkbox)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("隐藏熟练词翻译", style = MaterialTheme.typography.titleMedium)
+                    Text("熟练词的释义模糊显示，点击揭示，便于自测回忆", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = settings.hideMasteredTranslation,
+                    onCheckedChange = { viewModel.updateHideMasteredTranslation(it) },
+                )
+            }
+
             // 语音选择
             Text("发音音色", style = MaterialTheme.typography.titleMedium)
             androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

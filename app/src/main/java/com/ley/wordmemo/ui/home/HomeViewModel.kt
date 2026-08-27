@@ -1,5 +1,6 @@
 package com.ley.wordmemo.ui.home
 
+import dagger.hilt.android.qualifiers.ApplicationContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ley.wordmemo.data.model.Word
@@ -10,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,10 +30,17 @@ data class HomeUiState(
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val repository: WordRepository,
+    private val settingsRepository: com.ley.wordmemo.data.settings.SettingsRepository,
+    @ApplicationContext private val context: android.content.Context,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState
+
+    /** 隐藏熟练词翻译设置 (参考网页版 hideMasteredTranslation) */
+    val hideMastered: kotlinx.coroutines.flow.StateFlow<Boolean> = settingsRepository.settings
+        .map { it.hideMasteredTranslation }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val words: StateFlow<List<Word>> = combine(
         _uiState,
@@ -71,6 +80,25 @@ class HomeViewModel @Inject constructor(
     }
 
     fun delete(word: Word) = viewModelScope.launch { repository.delete(word) }
+
+    private var tts: android.speech.tts.TextToSpeech? = null
+
+    init {
+        tts = android.speech.tts.TextToSpeech(context) { status ->
+            if (status == android.speech.tts.TextToSpeech.SUCCESS) {
+                tts?.language = java.util.Locale.US
+            }
+        }
+    }
+
+    /** 播放单词发音 (TTS) */
+    fun speak(word: String) {
+        tts?.speak(word, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "word")
+    }
+
+
+    fun setStatus(word: Word, status: WordStatus) =
+        viewModelScope.launch { repository.setStatus(word.id, status) }
 
     private fun filterByQuery(all: List<Word>, q: String): List<Word> {
         val query = q.trim()

@@ -1,5 +1,6 @@
 package com.ley.wordmemo.ui.home
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.AssistChip
@@ -23,13 +25,19 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -51,6 +59,7 @@ fun HomeListScreen(
     val words by viewModel.words.collectAsStateWithLifecycle()
     val counts by viewModel.counts.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val hideMastered by viewModel.hideMastered.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
         SearchBar(
@@ -143,7 +152,12 @@ fun HomeListScreen(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 items(words, key = { it.id }) { word ->
-                    WordCard(word = word, onDelete = { viewModel.delete(word) })
+                    WordCard(
+                        word = word,
+                        hideTranslation = hideMastered,
+                        onSetStatus = { st -> viewModel.setStatus(word, st) },
+                        onSpeak = { viewModel.speak(word.word) },
+                    )
                 }
             }
         }
@@ -159,67 +173,130 @@ private fun StatusChip(label: String, selected: Boolean, onClick: () -> Unit) {
     )
 }
 
+/**
+ * 列表行 (参考网页版):
+ *  - 行底色随状态 (生词亮/熟练淡/忘记偏警示)
+ *  - 发音按钮 + 单词/音标 (左)
+ *  - 释义 (中)
+ *  - 三状态快速切换按钮组 (右, 高亮当前) — 同网页版 mastery-toggle-btn
+ */
 @Composable
-private fun WordCard(word: Word, onDelete: () -> Unit) {
-    // 无阴影卡片: 列表滚动时 shadow 是 GPU 开销主因
+private fun WordCard(
+    word: Word,
+    hideTranslation: Boolean,
+    onSetStatus: (WordStatus) -> Unit,
+    onSpeak: () -> Unit,
+) {
+    // 隐藏熟练词翻译 (网页版 blurred-definition): 熟练词释义模糊, 点击揭示
+    val status = WordStatus.from(word.status)
+    val shouldBlur = hideTranslation && status == WordStatus.MASTERED
+    var revealed by remember { mutableStateOf(false) }
+    // 行底色随状态 (低饱和区分)
+    val containerColor = when (status) {
+        WordStatus.NEW -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.35f)
+        WordStatus.MASTERED -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.30f)
+        WordStatus.FORGOTTEN -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.30f)
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        word.word,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    if (word.phonetic.isNotBlank()) {
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            word.phonetic,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+            // 第一行: 发音 + 单词 + 音标 (左), 状态 (右上角小徽章)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onSpeak, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.VolumeUp, "发音", modifier = Modifier.size(18.dp))
                 }
-                if (word.partOfSpeech.isNotBlank() || word.meaning.isNotBlank()) {
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    word.word,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                if (word.phonetic.isNotBlank()) {
+                    Spacer(Modifier.width(6.dp))
                     Text(
-                        "${word.partOfSpeech} ${word.meaning}".trim(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                if (word.example.isNotBlank()) {
-                    Text(
-                        word.example,
+                        word.phonetic,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
-            AssistChip(
-                onClick = {},
-                label = { Text(statusLabel(WordStatus.from(word.status))) },
-            )
+
+            // 释义 (隐藏熟练词翻译时模糊, 点击揭示 - 网页版 toggleRevealDefinition)
+            if (word.partOfSpeech.isNotBlank() || word.meaning.isNotBlank()) {
+                val defText = "${word.partOfSpeech} ${word.meaning}".trim()
+                Text(
+                    text = defText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .padding(start = 36.dp)
+                        .then(
+                            if (shouldBlur && !revealed)
+                                Modifier
+                                    .clickable(enabled = true, onClick = { revealed = true })
+                                    .graphicsLayer {
+                                        alpha = 0.45f
+                                        // 文字模糊: 用半透明+遮罩简化 (完整 blur 需要 RenderEffect)
+                                    }
+                            else if (shouldBlur)
+                                Modifier.clickable(enabled = true, onClick = { revealed = false })
+                            else Modifier
+                        ),
+                )
+                if (shouldBlur && !revealed) {
+                    Text(
+                        "••• 点击揭示释义",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 36.dp),
+                    )
+                }
+            }
+            if (word.example.isNotBlank()) {
+                Text(
+                    word.example,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(start = 36.dp),
+                )
+            }
+
+            // 三状态快速切换 (同网页版 mastery-btn-group)
+            Spacer(Modifier.size(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(start = 32.dp)) {
+                StatusToggleBtn("生词", status == WordStatus.NEW, MaterialTheme.colorScheme.secondaryContainer) {
+                    onSetStatus(WordStatus.NEW)
+                }
+                StatusToggleBtn("熟练", status == WordStatus.MASTERED, MaterialTheme.colorScheme.primaryContainer) {
+                    onSetStatus(WordStatus.MASTERED)
+                }
+                StatusToggleBtn("忘记", status == WordStatus.FORGOTTEN, MaterialTheme.colorScheme.errorContainer) {
+                    onSetStatus(WordStatus.FORGOTTEN)
+                }
+            }
         }
     }
 }
 
-private fun statusLabel(status: WordStatus): String = when (status) {
-    WordStatus.NEW -> "生词"
-    WordStatus.MASTERED -> "熟练"
-    WordStatus.FORGOTTEN -> "忘记"
+@Composable
+private fun StatusToggleBtn(label: String, active: Boolean, activeColor: Color, onClick: () -> Unit) {
+    androidx.compose.material3.FilterChip(
+        selected = active,
+        onClick = onClick,
+        label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+        colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+            selectedContainerColor = activeColor,
+            selectedLabelColor = MaterialTheme.colorScheme.onSurface,
+        ),
+    )
 }
 
 @Composable

@@ -31,6 +31,7 @@ data class AppSettings(
     val secondaryColor: Long = 0L,   // 自定义二级强调色 (ARGB), 0=默认
     val selfTest: Boolean = false,      // 自测模式: 翻转前隐藏释义
     val speechVoice: String = "",       // 首选 TTS 音色 (空的用系统默认)
+    val hideMasteredTranslation: Boolean = false,  // 隐藏熟练词翻译(网页版同名)
 ) {
     val isApiConfigured: Boolean
         get() = apiBaseUrl.isNotBlank() && apiKey.isNotBlank() && apiModel.isNotBlank()
@@ -58,6 +59,7 @@ class SettingsRepository @Inject constructor(
         val primaryColor = longPreferencesKey("primary_color")
         val secondaryColor = longPreferencesKey("secondary_color")
         val selfTest = booleanPreferencesKey("self_test")
+        val hideMasteredTranslation = booleanPreferencesKey("hide_mastered_translation")
         val speechVoice = stringPreferencesKey("speech_voice")
     }
 
@@ -75,6 +77,7 @@ class SettingsRepository @Inject constructor(
             secondaryColor = p[Keys.secondaryColor] ?: 0L,
             selfTest = p[Keys.selfTest] ?: false,
             speechVoice = p[Keys.speechVoice] ?: "",
+            hideMasteredTranslation = p[Keys.hideMasteredTranslation] ?: false,
         )
     }
 
@@ -121,5 +124,9 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setSpeechVoice(voice: String) {
         context.dataStore.edit { p -> p[Keys.speechVoice] = voice }
+    }
+
+    suspend fun setHideMasteredTranslation(enabled: Boolean) {
+        context.dataStore.edit { p -> p[Keys.hideMasteredTranslation] = enabled }
     }
 }

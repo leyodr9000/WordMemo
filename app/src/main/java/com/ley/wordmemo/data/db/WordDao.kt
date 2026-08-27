@@ -55,6 +55,10 @@ interface WordDao {
     @Query("UPDATE words SET sourceBook = :newBook WHERE COALESCE(NULLIF(sourceBook,''),'默认词库') = :oldBook")
     suspend fun renameBook(oldBook: String, newBook: String)
 
+
+    @Query("UPDATE words SET status = :status, updatedAt = :ts WHERE id = :id")
+    suspend fun updateStatus(id: Long, status: Int, ts: Long)
+
     @Query("DELETE FROM words WHERE COALESCE(NULLIF(sourceBook,''),'默认词库') = :book")
     suspend fun deleteBook(book: String)
 
