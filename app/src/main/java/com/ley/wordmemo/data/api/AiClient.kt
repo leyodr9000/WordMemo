@@ -130,6 +130,85 @@ class AiClient @Inject constructor() {
         }
     }
 
+    /**
+     * AI 助教对话（OpenAI 兼容 chat/completions）。
+     * @param history 对话历史（system/user/assistant）
+     * @param onDelta 流式回调，收到内容分片时调用（可为空=整段返回后一次性给）
+     * @return 完整回复文本
+     */
+    suspend fun chat(
+        settings: AppSettings,
+        history: List<ChatMessage>,
+        onDelta: ((String) -> Unit)? = null,
+    ): String {
+        require(settings.apiBaseUrl.isNotBlank() && settings.apiKey.isNotBlank()) {
+            "请先配置 Base URL 和 API Key"
+        }
+        val baseUrl = settings.apiBaseUrl.trimEnd('/')
+        val url = if (baseUrl.endsWith("/chat/completions")) baseUrl
+        else "$baseUrl/chat/completions"
+
+        val body = json.encodeToString(
+            ChatRequest(
+                model = settings.apiModel,
+                messages = history,
+                maxTokens = 1000,
+                temperature = 0.7,
+            )
+        )
+        val request = Request.Builder()
+            .url(url)
+            .addHeader("Authorization", "Bearer ${settings.apiKey}")
+            .addHeader("Content-Type", "application/json")
+            .post(body.toRequestBody("application/json".toMediaType()))
+            .build()
+
+        // 流式: 使用 SSE (data: {...}) 逐步解析
+        if (onDelta != null) {
+            okHttp.newCall(request).execute().use { resp ->
+                if (!resp.isSuccessful) {
+                    val err = resp.body?.string().orEmpty()
+                    throw RuntimeException("对话失败 HTTP ${resp.code}: ${err.take(200)}")
+                }
+                val reader = resp.body?.charStream() ?: throw RuntimeException("无响应体")
+                val sb = StringBuilder()
+                var buffer = StringBuilder()
+                reader.forEachLine { line ->
+                    val l = line.trim()
+                    if (l.startsWith("data:")) {
+                        val data = l.removePrefix("data:").trim()
+                        if (data == "[DONE]") return@forEachLine
+                        buffer.append(data)
+                        // 尝试解析增量
+                        runCatching {
+                            val chunk = json.decodeFromString<ChatStreamChunk>(buffer.toString())
+                            buffer = StringBuilder()
+                            chunk.choices.firstOrNull()?.delta?.content?.let {
+                                sb.append(it)
+                                onDelta(it)
+                            }
+                        }
+                    }
+                }
+                return sb.toString()
+            }
+        }
+
+        // 非流式: 整段返回
+        okHttp.newCall(request).execute().use { resp ->
+            if (!resp.isSuccessful) {
+                val err = resp.body?.string().orEmpty()
+                throw RuntimeException("对话失败 HTTP ${resp.code}: ${err.take(200)}")
+            }
+            val raw = resp.body?.string().orEmpty()
+            val apiResponse = runCatching { json.decodeFromString<ChatResponse>(raw) }
+                .getOrNull()
+            return apiResponse?.choices?.firstOrNull()?.message?.content
+                ?: apiResponse?.choices?.firstOrNull()?.text
+                ?: raw
+        }
+    }
+
     private fun String.toRequestBody(type: okhttp3.MediaType?): okhttp3.RequestBody =
         okhttp3.RequestBody.create(type, this)
 
