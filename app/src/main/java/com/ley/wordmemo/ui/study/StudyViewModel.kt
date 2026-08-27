@@ -19,6 +19,8 @@ data class StudyUiState(
     val queue: List<Word> = emptyList(),
     val currentIndex: Int = 0,
     val showAnswer: Boolean = false,
+    val selfTest: Boolean = false,   // 自测模式
+    val speechVoice: String = "",
     val stats: StudyStats = StudyStats(),
 ) {
     val currentWord: Word? get() = queue.getOrNull(currentIndex)
@@ -44,7 +46,12 @@ class StudyViewModel @Inject constructor(
 
     fun loadQueue() {
         viewModelScope.launch {
-            _uiState.value = StudyUiState(queue = repository.getStudyQueue(30))
+            val settings = settingsRepository.settings.first()
+            _uiState.value = StudyUiState(
+                queue = repository.getStudyQueue(30),
+                selfTest = settings.selfTest,
+                speechVoice = settings.speechVoice,
+            )
         }
     }
 
@@ -55,6 +62,10 @@ class StudyViewModel @Inject constructor(
 
     fun onSpeak() {
         val word = _uiState.value.currentWord ?: return
+        val voice = _uiState.value.speechVoice
+        if (voice.isNotEmpty()) {
+            tts?.setVoice(android.speech.tts.Voice("$voice", java.util.Locale.US, 2, 1, false, emptySet()))
+        }
         tts?.speak(word.word, TextToSpeech.QUEUE_FLUSH, null, "word")
     }
 

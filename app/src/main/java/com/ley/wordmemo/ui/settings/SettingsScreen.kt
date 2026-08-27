@@ -216,6 +216,34 @@ fun SettingsScreen(
                 )
             }
 
+            // 自测模式
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("自测模式", style = MaterialTheme.typography.titleMedium)
+                    Text("翻转前隐藏释义，先回忆再对照", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = settings.selfTest,
+                    onCheckedChange = { viewModel.updateSelfTest(it) },
+                )
+            }
+
+            // 语音选择
+            Text("发音音色", style = MaterialTheme.typography.titleMedium)
+            androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(listOf("默认" to "", "英音 A" to "en-GB", "英音 B" to "en-GB-x-isa", "美音 A" to "en-US", "美音 B" to "en-US-x-iwz")) { (label, tag) ->
+                    androidx.compose.material3.FilterChip(
+                        selected = settings.speechVoice == tag,
+                        onClick = { viewModel.updateSpeechVoice(tag) },
+                        label = { Text(label) },
+                    )
+                }
+            }
+
             Text("深色模式", style = MaterialTheme.typography.titleMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("system" to "跟随系统", "light" to "浅色", "dark" to "深色").forEach { (mode, label) ->

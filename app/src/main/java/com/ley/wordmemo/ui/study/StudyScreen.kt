@@ -161,6 +161,7 @@ fun StudyScreen(
                     flipped = flipped,
                     flipProgress = flipProgress.value,
                     offsetX = offsetX.value,
+                    selfTest = state.selfTest,
                     onFlip = {
                         flipped = !flipped
                         flipScope.launch {
@@ -287,6 +288,7 @@ private fun FlipCard3D(
     onFlip: () -> Unit,
     onSpeak: () -> Unit,
     modifyCard: @Composable (Modifier) -> Modifier,
+    selfTest: Boolean = false,
 ) {
     // 用 rotationY 做 3D 翻转 (变量名不与 graphicsLayer 属性冲突)
     val flipAngle = when {
@@ -373,12 +375,29 @@ private fun FlipCard3D(
                         textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.size(8.dp))
-                    Text(
-                        "${word.partOfSpeech} ${word.meaning}".trim(),
-                        style = MaterialTheme.typography.titleMedium,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
+                    if (selfTest && WordStatus.from(word.status) == WordStatus.MASTERED) {
+                        // 自测模式: 熟练词隐藏释义, 先回忆
+                        Text(
+                            "💭 自测：先回忆这个词的意思",
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                        Spacer(Modifier.size(8.dp))
+                        Text(
+                            "（熟练词已隐藏释义，正式环境会正常显示）",
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                        )
+                    } else {
+                        Text(
+                            "${word.partOfSpeech} ${word.meaning}".trim(),
+                            style = MaterialTheme.typography.titleMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
                     if (word.example.isNotBlank()) {
                         Spacer(Modifier.size(16.dp))
                         Text(
