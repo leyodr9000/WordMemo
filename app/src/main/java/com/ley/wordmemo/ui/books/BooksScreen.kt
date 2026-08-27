@@ -40,9 +40,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ley.wordmemo.data.model.BookStat
 
@@ -53,12 +56,30 @@ fun BooksScreen(
     viewModel: BooksViewModel = hiltViewModel(),
 ) {
     val books by viewModel.books.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val active by viewModel.activeBook.collectAsStateWithLifecycle()
     val loaded by viewModel.loaded.collectAsStateWithLifecycle()
 
     var showCreate by remember { mutableStateOf(false) }
     var renameTarget by remember { mutableStateOf<BookStat?>(null) }
     var deleteTarget by remember { mutableStateOf<BookStat?>(null) }
+    var showJsonError by remember { mutableStateOf<String?>(null) }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: android.net.Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val text = runCatching {
+            context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+        }.getOrNull()
+        if (text.isNullOrBlank()) {
+            showJsonError = "无法读取文件"
+        } else {
+            viewModel.importBookJson(text) { count ->
+                if (count == 0) showJsonError = "JSON 中没有有效单词"
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -69,6 +90,11 @@ fun BooksScreen(
                         IconButton(onClick = { onBack() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                         }
+                    }
+                },
+                actions = {
+                    TextButton(onClick = { importLauncher.launch("application/json") }) {
+                        Text("导入 JSON")
                     }
                 },
             )
@@ -158,6 +184,15 @@ fun BooksScreen(
             onDismiss = { renameTarget = null },
         )
     }
+    showJsonError?.let { err ->
+        AlertDialog(
+            onDismissRequest = { showJsonError = null },
+            title = { Text("导入失败") },
+            text = { Text(err) },
+            confirmButton = { TextButton(onClick = { showJsonError = null }) { Text("确定") } },
+        )
+    }
+
     deleteTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },

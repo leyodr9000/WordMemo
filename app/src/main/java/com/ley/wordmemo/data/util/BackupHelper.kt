@@ -4,6 +4,12 @@ import com.ley.wordmemo.data.api.ExtractedWord
 import com.ley.wordmemo.data.model.Word
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
 import java.io.File
 
 /** 导出/备份：整库导出为 JSON，可再导入 */
@@ -62,4 +68,17 @@ object BackupHelper {
     fun parseExtracted(raw: String): List<Word> = runCatching {
         json.decodeFromString<List<ExtractedWord>>(raw).map { it.toEntity() }
     }.getOrDefault(emptyList())
+
+    /** 解析"词书JSON"导入文件 */
+    fun parseWordBook(raw: String): Pair<String, List<Word>> = runCatching {
+        val root: JsonObject = json.parseToJsonElement(raw).jsonObject
+        val bookName: String = root["book"]?.jsonPrimitive?.contentOrNull
+            ?: root["name"]?.jsonPrimitive?.contentOrNull ?: ""
+        val wordsArr: JsonElement? = root["words"] ?: root["list"] ?: root["data"]
+        val list: List<ExtractedWord> = when {
+            wordsArr != null -> json.decodeFromJsonElement<List<ExtractedWord>>(wordsArr)
+            else -> json.decodeFromString<List<ExtractedWord>>(raw)
+        }
+        bookName to list.map { it.toEntity(bookName) }
+    }.getOrDefault("" to emptyList())
 }

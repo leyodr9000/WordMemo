@@ -3,6 +3,7 @@ package com.ley.wordmemo.ui.books
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ley.wordmemo.data.model.BookStat
+import com.ley.wordmemo.data.util.BackupHelper
 import com.ley.wordmemo.data.repository.WordRepository
 import com.ley.wordmemo.data.settings.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -66,6 +67,20 @@ class BooksViewModel @Inject constructor(
                 settingsRepository.setActiveBook(newName.trim())
             }
             onDone(true)
+        }
+    }
+
+    /** 从 JSON 字符串导入词书, 返回导入词数 */
+    fun importBookJson(jsonText: String, onDone: (Int) -> Unit) {
+        viewModelScope.launch {
+            val (bookName, words) = BackupHelper.parseWordBook(jsonText)
+            if (words.isEmpty()) { onDone(0); return@launch }
+            repository.insertAll(words)
+            // 自动激活新词书
+            val name = bookName.ifBlank { "导入词书" }
+            _activeBook.value = name
+            settingsRepository.setActiveBook(name)
+            onDone(words.size)
         }
     }
 
