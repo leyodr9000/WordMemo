@@ -44,6 +44,7 @@ fun MainTabsScreen(
             state = pagerState,
             modifier = Modifier.weight(1f),
             userScrollEnabled = true, // 允许左右滑动平移
+            beyondViewportPageCount = 0, // 不预渲染相邻页, 减少切换时重组开销(防掉帧)
         ) { page ->
             when (page) {
                 0 -> HomeListScreen(onOpenStudy = onOpenStudy)
