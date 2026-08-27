@@ -105,7 +105,9 @@ class AiClient @Inject constructor() {
      * 拉取可用模型列表（GET /models，OpenAI 兼容）。
      */
     suspend fun fetchModels(settings: AppSettings): List<String> {
-        require(settings.isApiConfigured) { "请先配置 API" }
+        require(settings.apiBaseUrl.isNotBlank() && settings.apiKey.isNotBlank()) {
+            "请先配置 Base URL 和 API Key"
+        }
         val baseUrl = settings.apiBaseUrl.trimEnd('/')
         val url = "$baseUrl/models"
         val request = Request.Builder()

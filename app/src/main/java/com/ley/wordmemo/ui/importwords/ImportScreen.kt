@@ -1,6 +1,9 @@
 package com.ley.wordmemo.ui.importwords
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.core.content.ContextCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -23,6 +26,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -34,6 +38,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberPermissionState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,7 +57,7 @@ import com.ley.wordmemo.data.api.ExtractedWord
 import java.io.File
 import java.io.FileOutputStream
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun ImportScreen(
     onBack: (() -> Unit)?,
@@ -63,6 +69,7 @@ fun ImportScreen(
     val context = LocalContext.current
 
     var cameraUri by remember { mutableStateOf<Uri?>(null) }
+    val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
 
     fun copyToCache(uri: Uri): File? = runCatching {
         val dir = File(context.cacheDir, "ocr").apply { mkdirs() }
@@ -84,6 +91,28 @@ fun ImportScreen(
     ) { ok: Boolean ->
         if (ok) cameraUri?.let { uri ->
             copyToCache(uri)?.let { f -> viewModel.onImagePicked(f) }
+        }
+    }
+
+    fun startCamera() {
+        val tmp = File(context.cacheDir, "camera_tmp.jpg").apply {
+            parentFile?.mkdirs()
+            if (!exists()) createNewFile()
+        }
+        cameraUri = androidx.core.content.FileProvider.getUriForFile(
+            context, "${context.packageName}.fileprovider", tmp
+        )
+        cameraUri?.let { takePicture.launch(it) }
+    }
+
+    /** 检查并请求相机权限, 授权后启动拍照 */
+    fun launchCamera() {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
+            == PackageManager.PERMISSION_GRANTED
+        ) {
+            startCamera()
+        } else {
+            cameraPermission.launchPermissionRequest()
         }
     }
 
@@ -116,15 +145,7 @@ fun ImportScreen(
 
             // 2. 选择图片来源
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = {
-                    cameraUri = androidx.core.content.FileProvider.getUriForFile(
-                        context, "${context.packageName}.fileprovider",
-                        File(context.cacheDir, "camera_tmp.jpg").apply {
-                            parentFile?.mkdirs()
-                        }
-                    )
-                    cameraUri?.let { takePicture.launch(it) }
-                }) {
+                OutlinedButton(onClick = { launchCamera() }) {
                     Icon(Icons.Default.CameraAlt, null)
                     Spacer(Modifier.size(6.dp))
                     Text("拍照")
@@ -141,13 +162,35 @@ fun ImportScreen(
                 is ImportState.NoApi -> Text("请先在「设置」中配置 AI API", color = MaterialTheme.colorScheme.error)
                 is ImportState.Error -> Text(s.message, color = MaterialTheme.colorScheme.error)
                 is ImportState.Recognizing -> {
+                    // AI 对话框式可视化: 上传→分析→解析 步骤
                     Column(
-                        modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        CircularProgressIndicator()
-                        Spacer(Modifier.size(12.dp))
-                        Text("AI 识别中…")
+                        Text("📖 AI 识别中", style = MaterialTheme.typography.titleMedium)
+                        Spacer(Modifier.size(16.dp))
+                        RecognizeStep(
+                            step = 0,
+                            current = s.stage,
+                            title = "上传图片",
+                            desc = "将书页图片发送给 AI",
+                        )
+                        Spacer(Modifier.size(10.dp))
+                        RecognizeStep(
+                            step = 1,
+                            current = s.stage,
+                            title = "AI 分析",
+                            desc = "识别生词与释义",
+                        )
+                        Spacer(Modifier.size(10.dp))
+                        RecognizeStep(
+                            step = 2,
+                            current = s.stage,
+                            title = "解析词条",
+                            desc = "整理为固定 JSON 格式",
+                        )
                     }
                 }
                 is ImportState.Preview -> {
@@ -216,6 +259,52 @@ private fun PreviewRow(word: ExtractedWord, onToggle: () -> Unit) {
             }
             IconButton(onClick = onToggle) {
                 Icon(Icons.Default.Close, "移除", tint = MaterialTheme.colorScheme.error)
+            }
+        }
+    }
+}
+@Composable
+private fun RecognizeStep(
+    step: Int,
+    current: Int,
+    title: String,
+    desc: String,
+) {
+    val (icon, color) = when {
+        current > step -> "✅" to MaterialTheme.colorScheme.tertiary
+        current == step -> "⏳" to MaterialTheme.colorScheme.primary
+        else -> "⬜" to MaterialTheme.colorScheme.outline
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (current == step)
+                MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.surfaceVariant,
+        ),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(icon, style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.size(12.dp))
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(title, style = MaterialTheme.typography.titleSmall)
+                    if (current == step) {
+                        Spacer(Modifier.size(8.dp))
+                        androidx.compose.material3.CircularProgressIndicator(
+                            modifier = Modifier.size(14.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    }
+                }
+                Text(
+                    desc,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

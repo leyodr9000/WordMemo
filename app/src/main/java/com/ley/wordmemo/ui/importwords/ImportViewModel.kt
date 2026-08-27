@@ -10,6 +10,7 @@ import com.ley.wordmemo.data.repository.WordRepository
 import com.ley.wordmemo.data.settings.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -22,7 +23,7 @@ sealed interface ImportState {
     data object Idle : ImportState
     data object NoImage : ImportState
     data object NoApi : ImportState
-    data object Recognizing : ImportState
+    data class Recognizing(val stage: Int = 0) : ImportState  // 0=上传 1=AI分析 2=解析词条
     data class Preview(val words: List<ExtractedWord>) : ImportState
     data class Done(val count: Int) : ImportState
     data class Error(val message: String) : ImportState
@@ -55,11 +56,16 @@ class ImportViewModel @Inject constructor(
                 _state.value = ImportState.NoApi
                 return@launch
             }
-            _state.value = ImportState.Recognizing
+            _state.value = ImportState.Recognizing(0)
             try {
+                // 模拟分阶段进度: 上传→分析→解析（真实 API 是单次请求，这里按时间推进展示）
+                kotlinx.coroutines.delay(400)
+                _state.value = ImportState.Recognizing(1)
                 val words = withContext(Dispatchers.IO) {
+                    kotlinx.coroutines.delay(800)
                     aiClient.extractWordsFromImage(settings, img)
                 }
+                _state.value = ImportState.Recognizing(2)
                 if (words.isEmpty()) {
                     _state.value = ImportState.Error("未能从图片中识别出单词，请检查 AI 配置或图片")
                 } else {
