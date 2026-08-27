@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -24,6 +25,7 @@ import androidx.compose.ui.Modifier
 import com.ley.wordmemo.ui.books.BooksScreen
 import com.ley.wordmemo.ui.home.HomeListScreen
 import com.ley.wordmemo.ui.importwords.ImportScreen
+import com.ley.wordmemo.ui.chat.ChatScreen
 import com.ley.wordmemo.ui.settings.SettingsScreen
 import kotlinx.coroutines.launch
 
@@ -40,7 +42,7 @@ fun MainTabsScreen(
     onOpenStudy: () -> Unit,
     navController: androidx.navigation.NavHostController,
 ) {
-    val pagerState = rememberPagerState(pageCount = { 4 })
+    val pagerState = rememberPagerState(pageCount = { 5 })
     val scope = rememberCoroutineScope()
     val settledPage by remember { derivedStateOf { pagerState.settledPage } }
 
@@ -56,7 +58,8 @@ fun MainTabsScreen(
                     0 -> HomeListScreen(onOpenStudy = onOpenStudy)
                     1 -> ImportScreen(onBack = null)
                     2 -> BooksScreen(onBack = null)
-                    3 -> SettingsScreen(onBack = null)
+                    3 -> ChatScreen(onBack = null)
+                    4 -> SettingsScreen(onBack = null)
                 }
             }
         }
@@ -82,6 +85,12 @@ fun MainTabsScreen(
             NavigationBarItem(
                 selected = settledPage == 3,
                 onClick = { scope.launch { pagerState.scrollToPage(3) } },
+                icon = { Icon(Icons.Default.SmartToy, null) },
+                label = { Text("AI") },
+            )
+            NavigationBarItem(
+                selected = settledPage == 4,
+                onClick = { scope.launch { pagerState.scrollToPage(4) } },
                 icon = { Icon(Icons.Default.Settings, null) },
                 label = { Text("设置") },
             )

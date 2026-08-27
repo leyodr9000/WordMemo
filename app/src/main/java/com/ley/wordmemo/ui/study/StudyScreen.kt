@@ -31,6 +31,7 @@ import androidx.compose.material.icons.automirrored.filled.NavigateBefore
 import androidx.compose.material.icons.automirrored.filled.NavigateNext
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -73,6 +74,7 @@ import java.util.Locale
 @Composable
 fun StudyScreen(
     onBack: () -> Unit,
+    onAskAi: (String, String) -> Unit = { _, _ -> },
     viewModel: StudyViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -110,6 +112,14 @@ fun StudyScreen(
                 title = { Text("卡片学习") },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回") }
+                },
+                actions = {
+                    val cur = state.currentWord
+                    if (cur != null) {
+                        IconButton(onClick = { onAskAi(cur.word, cur.meaning) }) {
+                            Icon(Icons.Default.SmartToy, "问AI")
+                        }
+                    }
                 },
             )
         },
