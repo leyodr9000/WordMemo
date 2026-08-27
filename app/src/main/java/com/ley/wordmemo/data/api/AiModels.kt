@@ -56,6 +56,18 @@ data class ChatResponse(
     }
 }
 
+/** GET /models 响应（OpenAI 兼容） */
+@Serializable
+data class ModelsResponse(
+    val data: List<ModelInfo> = emptyList(),
+) {
+    @Serializable
+    data class ModelInfo(
+        val id: String = "",
+        val owned_by: String? = null,
+    )
+}
+
 /** 解析 AI 返回文本中的 JSON 数组（容忍 markdown 代码块包裹） */
 object AiParser {
     private val json = Json { ignoreUnknownKeys = true }

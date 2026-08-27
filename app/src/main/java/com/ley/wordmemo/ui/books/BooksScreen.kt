@@ -54,6 +54,7 @@ fun BooksScreen(
 ) {
     val books by viewModel.books.collectAsStateWithLifecycle()
     val active by viewModel.activeBook.collectAsStateWithLifecycle()
+    val loaded by viewModel.loaded.collectAsStateWithLifecycle()
 
     var showCreate by remember { mutableStateOf(false) }
     var renameTarget by remember { mutableStateOf<BookStat?>(null) }
@@ -76,7 +77,8 @@ fun BooksScreen(
             }
         },
     ) { padding ->
-        if (books.isEmpty()) {
+        if (!loaded) {
+            // 首次加载完成前
             Column(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 verticalArrangement = Arrangement.Center,
@@ -100,14 +102,32 @@ fun BooksScreen(
                     onDelete = null,
                 )
             }
-            items(books, key = { it.book }) { stat ->
-                BookRow(
-                    book = stat,
-                    isActive = active == stat.book,
-                    onSelect = { viewModel.selectBook(stat.book) },
-                    onRename = { renameTarget = stat },
-                    onDelete = { deleteTarget = stat },
-                )
+            if (books.isEmpty()) {
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Icon(Icons.Default.MenuBook, null, Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.outline)
+                        Spacer(Modifier.size(12.dp))
+                        Text(
+                            "暂无词书，点右下角 + 新建",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            } else {
+                items(books, key = { it.book }) { stat ->
+                    BookRow(
+                        book = stat,
+                        isActive = active == stat.book,
+                        onSelect = { viewModel.selectBook(stat.book) },
+                        onRename = { renameTarget = stat },
+                        onDelete = { deleteTarget = stat },
+                    )
+                }
             }
         }
     }

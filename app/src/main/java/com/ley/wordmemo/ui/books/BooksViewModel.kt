@@ -24,11 +24,16 @@ class BooksViewModel @Inject constructor(
     private val _activeBook = MutableStateFlow("")
     val activeBook: StateFlow<String> = _activeBook
 
+    private val _loaded = MutableStateFlow(false)
+    /** false = 尚未加载完(显示转圈)；true = 已完成首次查询(空则显示"暂无词书") */
+    val loaded: StateFlow<Boolean> = _loaded
+
     val books: StateFlow<List<BookStat>> = combine(
         repository.books,
         _activeBook,
     ) { list, active ->
         // 把当前激活词书排到最前，并标记
+        _loaded.value = true
         list.sortedWith(compareByDescending<BookStat> { it.book == active }.thenByDescending { it.lastUpdated })
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
