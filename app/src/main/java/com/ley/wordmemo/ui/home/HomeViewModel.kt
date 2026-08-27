@@ -36,17 +36,10 @@ class HomeViewModel @Inject constructor(
     val words: StateFlow<List<Word>> = combine(
         _uiState,
         repository.allWords,
-        repository.wordsByStatus(WordStatus.NEW),
-        repository.wordsByStatus(WordStatus.MASTERED),
-        repository.wordsByStatus(WordStatus.FORGOTTEN),
-    ) { state, all, new, mastered, forgotten ->
+    ) { state, all ->
         when (val f = state.filter) {
             HomeFilter.All -> all
-            is HomeFilter.ByStatus -> when (f.status) {
-                WordStatus.NEW -> new
-                WordStatus.MASTERED -> mastered
-                WordStatus.FORGOTTEN -> forgotten
-            }
+            is HomeFilter.ByStatus -> all.filter { it.status == f.status.dbValue }
             is HomeFilter.Query -> filterByQuery(all, f.text)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

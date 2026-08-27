@@ -5,6 +5,7 @@ import com.ley.wordmemo.data.model.BookStat
 import com.ley.wordmemo.data.model.Word
 import com.ley.wordmemo.data.model.WordStatus
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -12,16 +13,16 @@ import javax.inject.Singleton
 class WordRepository @Inject constructor(
     private val wordDao: WordDao
 ) {
-    val allWords: Flow<List<Word>> = wordDao.observeAll()
-    val totalCount: Flow<Int> = wordDao.observeTotalCount()
+    val allWords: Flow<List<Word>> = wordDao.observeAll().distinctUntilChanged()
+    val totalCount: Flow<Int> = wordDao.observeTotalCount().distinctUntilChanged()
 
     fun wordsByStatus(status: WordStatus): Flow<List<Word>> =
-        wordDao.observeByStatus(status.dbValue)
+        wordDao.observeByStatus(status.dbValue).distinctUntilChanged()
 
     fun countByStatus(status: WordStatus): Flow<Int> =
-        wordDao.observeStatusCount(status.dbValue)
+        wordDao.observeStatusCount(status.dbValue).distinctUntilChanged()
 
-    fun search(query: String): Flow<List<Word>> = wordDao.search(query)
+    fun search(query: String): Flow<List<Word>> = wordDao.search(query).distinctUntilChanged()
 
     suspend fun getById(id: Long): Word? = wordDao.getById(id)
 
@@ -72,11 +73,11 @@ class WordRepository @Inject constructor(
 
     // ============ 单词书管理 ============
 
-    val books: Flow<List<BookStat>> = wordDao.observeBooks()
+    val books: Flow<List<BookStat>> = wordDao.observeBooks().distinctUntilChanged()
 
-    fun wordsByBook(book: String): Flow<List<Word>> = wordDao.observeByBook(book)
+    fun wordsByBook(book: String): Flow<List<Word>> = wordDao.observeByBook(book).distinctUntilChanged()
 
-    fun bookCount(book: String): Flow<Int> = wordDao.observeBookCount(book)
+    fun bookCount(book: String): Flow<Int> = wordDao.observeBookCount(book).distinctUntilChanged()
 
     suspend fun getBookNames(): List<String> = wordDao.getBookNames()
 

@@ -81,17 +81,31 @@ fun ImportScreen(
         file
     }.getOrNull()
 
+    // 页面提示文案（拍照失败等反馈）
+    var hintText by remember { mutableStateOf("") }
+
     val pickImage = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { copyToCache(it)?.let { f -> viewModel.onImagePicked(f) } }
+        if (uri != null) {
+            hintText = ""
+            copyToCache(uri)?.let { f -> viewModel.onImagePicked(f) }
+        } else {
+            hintText = "未选择图片"
+        }
     }
 
     val takePicture = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { ok: Boolean ->
-        if (ok) cameraUri?.let { uri ->
-            copyToCache(uri)?.let { f -> viewModel.onImagePicked(f) }
+        if (ok) {
+            hintText = ""
+            cameraUri?.let { uri ->
+                copyToCache(uri)?.let { f -> viewModel.onImagePicked(f) }
+            }
+        } else {
+            // 相机不可用 / 用户取消 / 拍照失败: 必须给反馈, 否则"毫无反应"
+            hintText = "相机不可用或已取消，请改用「相册」选择书页照片"
         }
     }
 
@@ -268,8 +282,19 @@ fun ImportScreen(
                             }
                         }
                     } else {
-                        Text("选择书页照片，AI 将自动提取单词", style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (hintText.isNotEmpty()) {
+                            Text(
+                                hintText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        } else {
+                            Text(
+                                "选择书页照片，AI 将自动提取单词",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
