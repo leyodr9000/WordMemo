@@ -1,5 +1,6 @@
 package com.ley.wordmemo.ui.settings
 
+import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ley.wordmemo.data.api.AiClient
@@ -88,6 +89,20 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             repository.setPrimaryColor(option.primaryArgb)
             repository.setSecondaryColor(option.secondaryArgb)
+        }
+    }
+
+    /** 单独设置一级强调色（Monet 派生整套） */
+    fun updatePrimary(color: androidx.compose.ui.graphics.Color) {
+        viewModelScope.launch {
+            repository.setPrimaryColor(color.toArgb().toLong() and 0xFFFFFFFFL)
+        }
+    }
+
+    /** 单独设置二级强调色 */
+    fun updateSecondary(color: androidx.compose.ui.graphics.Color) {
+        viewModelScope.launch {
+            repository.setSecondaryColor(color.toArgb().toLong() and 0xFFFFFFFFL)
         }
     }
 

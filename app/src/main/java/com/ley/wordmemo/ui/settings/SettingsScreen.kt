@@ -29,6 +29,8 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -38,13 +40,19 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ley.wordmemo.ui.components.ColorPickerDialog
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -56,6 +64,8 @@ fun SettingsScreen(
     val apiForm by viewModel.apiForm.collectAsStateWithLifecycle()
     val modelsState by viewModel.modelsState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    // 自定义取色对话框状态 (哪一级, 当前ARGB)
+    var showPicker by remember { mutableStateOf<Pair<String, Long>?>(null) }
 
     Scaffold(
         topBar = {
@@ -313,6 +323,114 @@ fun SettingsScreen(
                     }
                 }
             }
+
+            // ===== 自定义取色 =====
+            Spacer(Modifier.size(16.dp))
+            Text("自定义配色（自由取色）", style = MaterialTheme.typography.titleMedium)
+
+            // 实时预览卡
+            androidx.compose.material3.Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = androidx.compose.material3.CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
+            ) {
+                Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                    Text("主题预览", style = MaterialTheme.typography.labelMedium)
+                    Spacer(Modifier.size(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = {},
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = com.ley.wordmemo.ui.theme.ThemeOptions.resolve(
+                                    settings.primaryColor, settings.secondaryColor
+                                ).primary,
+                            ),
+                        ) { Text("主要按钮") }
+                        FilledTonalButton(
+                            onClick = {},
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = com.ley.wordmemo.ui.theme.ThemeOptions.resolve(
+                                    settings.primaryColor, settings.secondaryColor
+                                ).secondary,
+                            ),
+                        ) { Text("次要按钮") }
+                    }
+                }
+            }
+            Spacer(Modifier.size(8.dp))
+
+            // 一级色
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .background(
+                            Color(settings.primaryColor.toInt()),
+                            CircleShape,
+                        )
+                )
+                Spacer(Modifier.size(10.dp))
+                Text("一级强调色", modifier = Modifier.weight(1f))
+                OutlinedButton(onClick = {
+                    showPicker = "primary" to settings.primaryColor
+                }) { Text("取色") }
+            }
+            // 二级色
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .background(
+                            Color(settings.secondaryColor.toInt()),
+                            CircleShape,
+                        )
+                )
+                Spacer(Modifier.size(10.dp))
+                Text("二级强调色", modifier = Modifier.weight(1f))
+                OutlinedButton(onClick = {
+                    showPicker = "secondary" to settings.secondaryColor
+                }) { Text("取色") }
+            }
+            Text(
+                "提示：二级色建议用一级色降饱和/降亮度获得，整体更协调",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.size(8.dp))
+            Button(
+                onClick = {
+                    // 恢复默认靛蓝
+                    viewModel.updateTheme(com.ley.wordmemo.ui.theme.ThemeOptions.Indigo)
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("恢复默认主题") }
         }
     }
+
+    // ===== 自定义取色对话框 =====
+    showPicker?.let { (level, argb) ->
+        val initial = if (argb != 0L) Color(argb.toInt()) else Color(0xFF4F46E5)
+        ColorPickerDialog(
+            title = if (level == "primary") "选择一级强调色" else "选择二级强调色",
+            initialColor = initial,
+            onConfirm = { color ->
+                val argb = color.toArgb().toLong() and 0xFFFFFFFFL
+                if (level == "primary") {
+                    viewModel.updatePrimary(color)
+                } else {
+                    viewModel.updateSecondary(color)
+                }
+                showPicker = null
+            },
+            onDismiss = { showPicker = null },
+        )
+    }
 }
+
