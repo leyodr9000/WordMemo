@@ -120,6 +120,10 @@ fun BooksScreen(
                                 text = { Text("📄 导入 JSON 词书") },
                                 onClick = { plusMenuExpanded = false; importLauncher.launch("application/json") },
                             )
+                            DropdownMenuItem(
+                                text = { Text("📖 阅读文章") },
+                                onClick = { plusMenuExpanded = false; onOpenImport("reader") },
+                            )
                         }
                     }
                 },

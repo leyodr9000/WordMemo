@@ -1,6 +1,7 @@
 package com.ley.wordmemo.di
 
 import android.content.Context
+import com.ley.wordmemo.data.db.ArticleDao
 import com.ley.wordmemo.data.db.WordDao
 import com.ley.wordmemo.data.db.WordDatabase
 import dagger.Module
@@ -21,4 +22,7 @@ object DatabaseModule {
 
     @Provides
     fun provideWordDao(db: WordDatabase): WordDao = db.wordDao()
+
+    @Provides
+    fun provideArticleDao(db: WordDatabase): ArticleDao = db.articleDao()
 }

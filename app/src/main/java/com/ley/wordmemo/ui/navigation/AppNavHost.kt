@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.ley.wordmemo.ui.main.MainTabsScreen
+import com.ley.wordmemo.ui.reader.ReaderScreen
 import com.ley.wordmemo.ui.chat.ChatScreen
 import com.ley.wordmemo.ui.importwords.ImportScreen
 import com.ley.wordmemo.ui.study.StudyScreen
@@ -17,6 +18,7 @@ object Routes {
     const val STUDY = "study"
     const val AI = "ai?word={word}&meaning={meaning}"
     const val IMPORT = "import?mode={mode}"
+    const val READER = "reader"
 
     fun import(mode: String = "camera") = "import?mode=$mode"
 
@@ -40,6 +42,12 @@ fun AppNavHost(navController: NavHostController) {
             arguments = listOf(androidx.navigation.navArgument("mode") { defaultValue = "camera" }),
         ) { entry ->
             ImportScreen(
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable(Routes.READER) {
+            ReaderScreen(
+                article = null,
                 onBack = { navController.popBackStack() },
             )
         }

@@ -59,7 +59,11 @@ fun MainTabsScreen(
                     1 -> BooksScreen(
                         onBack = null,
                         onOpenImport = { mode ->
-                            if (mode != "json") navController.navigate("import?mode=$mode")
+                            when (mode) {
+                                "reader" -> navController.navigate("reader")
+                                "json" -> {}  // 本地按钮处理
+                                else -> navController.navigate("import?mode=$mode")
+                            }
                         },
                     )
                     2 -> ChatScreen(onBack = null)
