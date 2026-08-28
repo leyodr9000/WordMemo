@@ -112,6 +112,7 @@ fun ReaderScreen(
                 itemsIndexed(state.sentenceList) { idx, sentence ->
                     SentenceCard(
                         sentence = sentence,
+                        tappedWord = state.tappedWord,
                         showTranslation = state.wholeTranslated ||
                             sentence.translation.isNotBlank(),
                         onTapWord = { word, ax, ay -> viewModel.onWordTap(word, ax, ay) },
@@ -125,6 +126,12 @@ fun ReaderScreen(
     // ===== 点词翻译气泡 =====
     if (state.tappedWord.isNotBlank()) {
         Box(modifier = Modifier.fillMaxSize()) {
+            // 关闭层放最底层 (先声明), 气泡在其上, 避免遮罩挡住气泡
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { viewModel.dismissWordTip() }
+            )
             Card(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -149,12 +156,6 @@ fun ReaderScreen(
                     )
                 }
             }
-            // 点空白关闭
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clickable { viewModel.dismissWordTip() }
-            )
         }
     }
 }
@@ -163,6 +164,7 @@ fun ReaderScreen(
 @Composable
 private fun SentenceCard(
     sentence: ReaderSentence,
+    tappedWord: String,
     showTranslation: Boolean,
     onTapWord: (String, Float, Float) -> Unit,
     onTranslate: () -> Unit,
@@ -178,6 +180,7 @@ private fun SentenceCard(
             // 原文：点击单词弹翻译气泡
             WordSpans(
                 text = sentence.original,
+                tappedWord = tappedWord,
                 onTapWord = onTapWord,
             )
             Spacer(Modifier.height(6.dp))
@@ -212,28 +215,38 @@ private fun SentenceCard(
 @Composable
 private fun WordSpans(
     text: String,
+    tappedWord: String,
     onTapWord: (String, Float, Float) -> Unit,
 ) {
     val segments: List<String> = remember(text) { splitKeepWhitespace(text) }
-    Box(modifier = Modifier.fillMaxWidth()) {
-        // 用 Flow 布局更接近文本流
-        androidx.compose.foundation.layout.FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            segments.forEach { seg ->
-                if (seg.trim().isEmpty()) {
-                    Text(seg, style = MaterialTheme.typography.bodyLarge)
-                } else {
-                    val word = seg.trim()
-                    Text(
-                        text = "$word ",
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.clickable {
-                            onTapWord(word, 0f, 0f)
-                        },
-                    )
-                }
+    // 被点词 (归一化用于匹配: 去标点/小写)
+    val tappedKey = remember(tappedWord) {
+        tappedWord.trim().trim(',', '.', ';', ':', '!', '?', '"', '(', ')', 's').lowercase()
+    }
+    androidx.compose.foundation.layout.FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        segments.forEach { seg ->
+            if (seg.trim().isEmpty()) {
+                Text(seg, style = MaterialTheme.typography.bodyLarge)
+            } else {
+                val word = seg.trim()
+                val key = word.trim(',', '.', ';', ':', '!', '?', '"', '(', ')', 's').lowercase()
+                val isTapped = key == tappedKey && tappedKey.isNotEmpty()
+                Text(
+                    text = "$word ",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        textDecoration = if (isTapped)
+                            androidx.compose.ui.text.style.TextDecoration.Underline
+                        else null,
+                    ),
+                    color = if (isTapped) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    fontWeight = if (isTapped) androidx.compose.ui.text.font.FontWeight.Bold else null,
+                    modifier = Modifier.clickable {
+                        onTapWord(word, 0f, 0f)
+                    },
+                )
             }
         }
     }

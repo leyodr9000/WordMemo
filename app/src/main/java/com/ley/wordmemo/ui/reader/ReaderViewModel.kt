@@ -157,12 +157,9 @@ class ReaderViewModel @Inject constructor(
         )
         viewModelScope.launch {
             val settings = settingsRepository.settings.first()
-            // 离线词典优先: 无需 API
+            // 整句翻译需要 AI; 未启用时给出明确提示 (点词翻译离线可用)
             if (settings.translationSource != "ai" || !settings.isApiConfigured) {
-                val off = withContext(Dispatchers.IO) {
-                    com.ley.wordmemo.data.reader.OfflineDict.translateSentenceOffline(context, s.original)
-                }
-                _state.value = applyTranslation(index, if (off.isBlank()) "（未收录）" else off)
+                _state.value = applyTranslation(index, "（整句翻译需启用「AI 翻译」；点词可离线查义）")
                 return@launch
             }
             val tr = withContext(Dispatchers.IO) {
@@ -200,7 +197,12 @@ class ReaderViewModel @Inject constructor(
             val settings = settingsRepository.settings.first()
             val useOffline = settings.translationSource != "ai" || !settings.isApiConfigured
             if (useOffline) {
-                com.ley.wordmemo.data.reader.OfflineDict.ensureLoaded(context)
+                _state.value = _state.value.copy(
+                    wholeTranslated = true,
+                    translatingAll = false,
+                    error = "全文翻译需启用「AI 翻译」（设置-学习-翻译源）。点词翻译离线可用。",
+                )
+                return@launch
             }
             // 批量: 全部未翻译的句子
             val idxList = _state.value.sentenceList.indices.toList()
@@ -214,17 +216,13 @@ class ReaderViewModel @Inject constructor(
                     },
                 )
                 val tr = withContext(Dispatchers.IO) {
-                    if (useOffline) {
-                        com.ley.wordmemo.data.reader.OfflineDict.translateSentenceOffline(context, s.original)
-                    } else {
-                        aiClient.chat(
-                            settings = settings,
-                            history = listOf(
-                                ChatMessage("system", "你是专业翻译。把这句英文翻成通顺地道的中文，只输出译文。"),
-                                ChatMessage("user", s.original),
-                            ),
-                        ).trim().take(200)
-                    }
+                    aiClient.chat(
+                        settings = settings,
+                        history = listOf(
+                            ChatMessage("system", "你是专业翻译。把这句英文翻成通顺地道的中文，只输出译文。"),
+                            ChatMessage("user", s.original),
+                        ),
+                    ).trim().take(200)
                 }
                 _state.value = _state.value.copy(
                     sentenceList = _state.value.sentenceList.mapIndexed { i, it ->
