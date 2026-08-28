@@ -319,6 +319,18 @@ fun SettingsScreen(
             } // end 学习
 
             if (settingsCategory == 2) {
+            // 界面风格 (Material You / MIUI X)
+            Text("界面风格", style = MaterialTheme.typography.titleMedium)
+            androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(listOf("monet" to "🌿 Material You", "miui" to "💠 MIUI X")) { (key, label) ->
+                    androidx.compose.material3.FilterChip(
+                        selected = settings.uiStyle == key,
+                        onClick = { viewModel.updateUiStyle(key) },
+                        label = { Text(label) },
+                    )
+                }
+            }
+
             Text("深色模式", style = MaterialTheme.typography.titleMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("system" to "跟随系统", "light" to "浅色", "dark" to "深色").forEach { (mode, label) ->

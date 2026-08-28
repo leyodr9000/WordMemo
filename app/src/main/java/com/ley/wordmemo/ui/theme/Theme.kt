@@ -53,12 +53,18 @@ fun WordMemoTheme(
     darkMode: String = "system",
     customPrimary: Long = 0L,
     customSecondary: Long = 0L,
+    uiStyle: String = "monet",   // monet | miui
     content: @Composable () -> Unit,
 ) {
     val darkTheme = when (darkMode) {
         "light" -> false
         "dark" -> true
         else -> isSystemInDarkTheme()
+    }
+    // MIUI X 风格: 固定 MIUI 蓝 + 大圆角
+    if (uiStyle == "miui") {
+        MiuiXTheme(darkTheme = darkTheme, content = content)
+        return
     }
     // 种子色: 用存储的自定义色, 无则默认靛蓝
     val primarySeed = longToSeed(customPrimary) ?: ThemeOptions.Indigo.primary

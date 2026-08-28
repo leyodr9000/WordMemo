@@ -33,6 +33,7 @@ data class AppSettings(
     val speechVoice: String = "",       // 首选 TTS 音色 (空的用系统默认)
     val hideMasteredTranslation: Boolean = false,  // 隐藏熟练词翻译(网页版同名)
     val cardAnimation: String = "slide",  // 卡片切换动画: slide/flip/scale/fade
+    val uiStyle: String = "monet",   // 界面风格: monet(Material You) | miui(MIUI X)
 ) {
     val isApiConfigured: Boolean
         get() = apiBaseUrl.isNotBlank() && apiKey.isNotBlank() && apiModel.isNotBlank()
@@ -62,6 +63,7 @@ class SettingsRepository @Inject constructor(
         val selfTest = booleanPreferencesKey("self_test")
         val hideMasteredTranslation = booleanPreferencesKey("hide_mastered_translation")
         val cardAnimation = stringPreferencesKey("card_animation")
+        val uiStyle = stringPreferencesKey("ui_style")
         val speechVoice = stringPreferencesKey("speech_voice")
     }
 
@@ -81,6 +83,7 @@ class SettingsRepository @Inject constructor(
             speechVoice = p[Keys.speechVoice] ?: "",
             hideMasteredTranslation = p[Keys.hideMasteredTranslation] ?: false,
             cardAnimation = p[Keys.cardAnimation] ?: "slide",
+            uiStyle = p[Keys.uiStyle] ?: "monet",
         )
     }
 
@@ -135,5 +138,9 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setCardAnimation(style: String) {
         context.dataStore.edit { p -> p[Keys.cardAnimation] = style }
+    }
+
+    suspend fun setUiStyle(style: String) {
+        context.dataStore.edit { p -> p[Keys.uiStyle] = style }
     }
 }

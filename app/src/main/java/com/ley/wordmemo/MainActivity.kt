@@ -27,6 +27,7 @@ class MainActivity : ComponentActivity() {
                 darkMode = settings.darkMode,
                 customPrimary = settings.primaryColor,
                 customSecondary = settings.secondaryColor,
+                uiStyle = settings.uiStyle,
             ) {
                 AppNavHost(navController = rememberNavController())
             }
