@@ -100,6 +100,12 @@ class HomeViewModel @Inject constructor(
     fun setStatus(word: Word, status: WordStatus) =
         viewModelScope.launch { repository.setStatus(word.id, status) }
 
+    /** 列表页快捷开关: 隐藏熟练词翻译 */
+    fun toggleHideMastered() = viewModelScope.launch {
+        val cur = hideMastered.value
+        settingsRepository.setHideMasteredTranslation(!cur)
+    }
+
     private fun filterByQuery(all: List<Word>, q: String): List<Word> {
         val query = q.trim()
         if (query.isEmpty()) return all

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Book
@@ -32,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SearchBar
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,7 +50,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ley.wordmemo.data.model.Word
 import com.ley.wordmemo.data.model.WordStatus
-import com.ley.wordmemo.ui.components.ProgressRing
+import com.ley.wordmemo.ui.components.MultiRing
+import com.ley.wordmemo.ui.components.RingLayer
 
 /**
  * 列表模式（主 Tab 第 1 页）。
@@ -58,59 +61,50 @@ import com.ley.wordmemo.ui.components.ProgressRing
 @Composable
 fun HomeListScreen(
     onOpenStudy: () -> Unit,
-    onOpenImport: (String) -> Unit = {},   // 进入导入页: "camera"|"gallery"|"json"
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
-    // ===== 右上角加号下拉菜单 (微信风格入口) =====
-    var menuExpanded by remember { mutableStateOf(false) }
     val words by viewModel.words.collectAsStateWithLifecycle()
     val counts by viewModel.counts.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val hideMastered by viewModel.hideMastered.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Row(
+        SearchBar(
+            query = (uiState.filter as? HomeFilter.Query)?.text ?: "",
+            onQueryChange = { viewModel.setQuery(it) },
+            onSearch = { },
+            onActiveChange = { },
+            active = uiState.isSearching,
+            placeholder = { Text("搜索单词或释义") },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+        ) {}
+
+        // 列表页快捷开关: 隐藏熟练词翻译 (网页版 hide-mastered)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            SearchBar(
-                query = (uiState.filter as? HomeFilter.Query)?.text ?: "",
-                onQueryChange = { viewModel.setQuery(it) },
-                onSearch = { },
-                onActiveChange = { },
-                active = uiState.isSearching,
-                placeholder = { Text("搜索单词或释义") },
-                modifier = Modifier.weight(1f),
-            ) {}
-            Spacer(Modifier.width(4.dp))
-            Box {
-                IconButton(onClick = { menuExpanded = true }) {
-                    Icon(Icons.Default.Add, "导入")
-                }
-                DropdownMenu(
-                    expanded = menuExpanded,
-                    onDismissRequest = { menuExpanded = false },
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("📷 拍照识别导入") },
-                        onClick = { menuExpanded = false; onOpenImport("camera") },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("🖼️ 从相册选择") },
-                        onClick = { menuExpanded = false; onOpenImport("gallery") },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("📄 导入 JSON 词书") },
-                        onClick = { menuExpanded = false; onOpenImport("json") },
-                    )
-                }
+            Icon(Icons.Default.VisibilityOff, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text("隐藏熟练词翻译", style = MaterialTheme.typography.labelMedium)
+                Text("熟练词释义模糊，点击揭示", style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            Switch(
+                checked = hideMastered,
+                onCheckedChange = { viewModel.toggleHideMastered() },
+            )
         }
 
         // 学习进度统计卡片
         val total = (counts[WordStatus.NEW] ?: 0) + (counts[WordStatus.MASTERED] ?: 0) + (counts[WordStatus.FORGOTTEN] ?: 0)
         val mastered = counts[WordStatus.MASTERED] ?: 0
-        val progress = if (total == 0) 0f else mastered.toFloat() / total
+        val newCount = counts[WordStatus.NEW] ?: 0
+        val forgotten = counts[WordStatus.FORGOTTEN] ?: 0
+        val totalF = if (total == 0) 1f else total.toFloat()
         androidx.compose.material3.Card(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
         ) {
@@ -118,11 +112,16 @@ fun HomeListScreen(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                ProgressRing(
-                    progress = progress,
-                    sizeDp = 96.dp,
-                    strokeWidth = 8.dp,
-                    label = "掌握率",
+                // 多层进度环 (运动手环样式): 生词/熟练/忘记 各一层不同配色
+                MultiRing(
+                    layers = listOf(
+                        RingLayer("熟练", mastered / totalF, MaterialTheme.colorScheme.primary),
+                        RingLayer("生词", newCount / totalF, MaterialTheme.colorScheme.tertiary),
+                        RingLayer("忘记", forgotten / totalF, MaterialTheme.colorScheme.error),
+                    ),
+                    sizeDp = 108.dp,
+                    strokeWidth = 10.dp,
+                    centerLabel = "掌握率",
                 )
                 Spacer(Modifier.width(20.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -337,14 +336,25 @@ private fun StatusToggleBtn(label: String, active: Boolean, activeColor: Color, 
 @Composable
 private fun ProgressStatRow(label: String, count: Int, total: Int) {
     val pct = if (total == 0) 0 else (count * 100) / total
+    // 进度条带增减动画
+    val anim by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (total == 0) 0f else count.toFloat() / total,
+        animationSpec = androidx.compose.animation.core.tween(durationMillis = 700),
+        label = "stat-${label}",
+    )
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(48.dp))
         androidx.compose.material3.LinearProgressIndicator(
-            progress = { if (total == 0) 0f else count.toFloat() / total },
+            progress = { anim },
             modifier = Modifier.weight(1f).height(8.dp),
         )
         Spacer(Modifier.width(8.dp))
-        Text("$count ($pct%)", style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            "$count ($pct%)",
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontFeatureSettings = "tnum",  // 等宽数字: 个位/十位不跳动
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

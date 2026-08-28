@@ -55,16 +55,13 @@ fun MainTabsScreen(
         ) { page ->
             key(page) {
                 when (page) {
-                    0 -> HomeListScreen(
-                        onOpenStudy = onOpenStudy,
+                    0 -> HomeListScreen(onOpenStudy = onOpenStudy)
+                    1 -> BooksScreen(
+                        onBack = null,
                         onOpenImport = { mode ->
-                            when (mode) {
-                                "json" -> scope.launch { pagerState.scrollToPage(1) }  // 词书页有 JSON 导入
-                                else -> navController.navigate("import?mode=$mode")
-                            }
+                            if (mode != "json") navController.navigate("import?mode=$mode")
                         },
                     )
-                    1 -> BooksScreen(onBack = null)
                     2 -> ChatScreen(onBack = null)
                     3 -> SettingsScreen(onBack = null)
                 }

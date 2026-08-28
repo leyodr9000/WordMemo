@@ -32,6 +32,7 @@ data class AppSettings(
     val selfTest: Boolean = false,      // 自测模式: 翻转前隐藏释义
     val speechVoice: String = "",       // 首选 TTS 音色 (空的用系统默认)
     val hideMasteredTranslation: Boolean = false,  // 隐藏熟练词翻译(网页版同名)
+    val cardAnimation: String = "slide",  // 卡片切换动画: slide/flip/scale/fade
 ) {
     val isApiConfigured: Boolean
         get() = apiBaseUrl.isNotBlank() && apiKey.isNotBlank() && apiModel.isNotBlank()
@@ -60,6 +61,7 @@ class SettingsRepository @Inject constructor(
         val secondaryColor = longPreferencesKey("secondary_color")
         val selfTest = booleanPreferencesKey("self_test")
         val hideMasteredTranslation = booleanPreferencesKey("hide_mastered_translation")
+        val cardAnimation = stringPreferencesKey("card_animation")
         val speechVoice = stringPreferencesKey("speech_voice")
     }
 
@@ -78,6 +80,7 @@ class SettingsRepository @Inject constructor(
             selfTest = p[Keys.selfTest] ?: false,
             speechVoice = p[Keys.speechVoice] ?: "",
             hideMasteredTranslation = p[Keys.hideMasteredTranslation] ?: false,
+            cardAnimation = p[Keys.cardAnimation] ?: "slide",
         )
     }
 
@@ -128,5 +131,9 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setHideMasteredTranslation(enabled: Boolean) {
         context.dataStore.edit { p -> p[Keys.hideMasteredTranslation] = enabled }
+    }
+
+    suspend fun setCardAnimation(style: String) {
+        context.dataStore.edit { p -> p[Keys.cardAnimation] = style }
     }
 }

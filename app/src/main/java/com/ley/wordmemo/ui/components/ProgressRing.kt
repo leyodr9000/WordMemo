@@ -69,7 +69,10 @@ fun ProgressRing(
             if (showPercent) {
                 Text(
                     text = "${(animated * 100).toInt()}%",
-                    fontSize = 22.sp,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontSize = 22.sp,
+                        fontFeatureSettings = "tnum",
+                    ),
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }

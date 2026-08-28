@@ -21,6 +21,7 @@ data class StudyUiState(
     val showAnswer: Boolean = false,
     val selfTest: Boolean = false,   // 自测模式
     val speechVoice: String = "",
+    val cardAnimation: String = "slide",  // slide/flip/scale/fade
     val stats: StudyStats = StudyStats(),
 ) {
     val currentWord: Word? get() = queue.getOrNull(currentIndex)
@@ -51,6 +52,7 @@ class StudyViewModel @Inject constructor(
                 queue = repository.getStudyQueue(30),
                 selfTest = settings.selfTest,
                 speechVoice = settings.speechVoice,
+                cardAnimation = settings.cardAnimation,
             )
         }
     }

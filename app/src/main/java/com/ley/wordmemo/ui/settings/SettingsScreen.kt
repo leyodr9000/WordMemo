@@ -293,6 +293,18 @@ fun SettingsScreen(
             }
 
             // 语音选择
+            // 卡片切换动画
+            Text("卡片切换动画", style = MaterialTheme.typography.titleMedium)
+            androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(listOf("slide" to "左右平移", "flip" to "翻转", "scale" to "缩放", "fade" to "淡入淡出")) { (key, label) ->
+                    androidx.compose.material3.FilterChip(
+                        selected = settings.cardAnimation == key,
+                        onClick = { viewModel.updateCardAnimation(key) },
+                        label = { Text(label) },
+                    )
+                }
+            }
+
             Text("发音音色", style = MaterialTheme.typography.titleMedium)
             androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(listOf("默认" to "", "英音 A" to "en-GB", "英音 B" to "en-GB-x-isa", "美音 A" to "en-US", "美音 B" to "en-US-x-iwz")) { (label, tag) ->

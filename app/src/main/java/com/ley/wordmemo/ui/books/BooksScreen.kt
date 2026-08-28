@@ -2,6 +2,7 @@ package com.ley.wordmemo.ui.books
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +23,8 @@ import androidx.compose.material.icons.filled.MenuBook
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -53,6 +56,8 @@ import com.ley.wordmemo.data.model.BookStat
 @Composable
 fun BooksScreen(
     onBack: (() -> Unit)?,
+    onOpenImport: (String) -> Unit = {},   // "camera"|"gallery"|"json"
+
     viewModel: BooksViewModel = hiltViewModel(),
 ) {
     val books by viewModel.books.collectAsStateWithLifecycle()
@@ -64,6 +69,7 @@ fun BooksScreen(
     var renameTarget by remember { mutableStateOf<BookStat?>(null) }
     var deleteTarget by remember { mutableStateOf<BookStat?>(null) }
     var showJsonError by remember { mutableStateOf<String?>(null) }
+    var plusMenuExpanded by remember { mutableStateOf(false) }
 
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
@@ -93,8 +99,28 @@ fun BooksScreen(
                     }
                 },
                 actions = {
-                    TextButton(onClick = { importLauncher.launch("application/json") }) {
-                        Text("导入 JSON")
+                    // 右上角加号: 拍照/相册/JSON 导入 (微信风格)
+                    Box {
+                        IconButton(onClick = { plusMenuExpanded = true }) {
+                            Icon(Icons.Default.Add, "导入")
+                        }
+                        DropdownMenu(
+                            expanded = plusMenuExpanded,
+                            onDismissRequest = { plusMenuExpanded = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("📷 拍照识别导入") },
+                                onClick = { plusMenuExpanded = false; onOpenImport("camera") },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("🖼️ 从相册选择") },
+                                onClick = { plusMenuExpanded = false; onOpenImport("gallery") },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("📄 导入 JSON 词书") },
+                                onClick = { plusMenuExpanded = false; importLauncher.launch("application/json") },
+                            )
+                        }
                     }
                 },
             )

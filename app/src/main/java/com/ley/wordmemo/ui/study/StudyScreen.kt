@@ -135,7 +135,9 @@ fun StudyScreen(
         ) {
             Text(
                 "${state.progress} / ${state.total}   · 认识 ${state.stats.known}  忘记 ${state.stats.forgotten}",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontFeatureSettings = "tnum",
+                ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.size(8.dp))
@@ -164,6 +166,7 @@ fun StudyScreen(
                     flipProgress = flipProgress.value,
                     offsetX = offsetX.value,
                     selfTest = state.selfTest,
+                    cardAnimation = state.cardAnimation,
                     onFlip = {
                         flipped = !flipped
                         flipScope.launch {
@@ -214,8 +217,8 @@ fun StudyScreen(
                                 )
                             }
                             .graphicsLayer {
+                                // 纯左右平移 (无倾斜, 更干净)
                                 translationX = offsetX.value
-                                rotationZ = offsetX.value / 90f
                             }
                     },
                 )
@@ -312,6 +315,7 @@ private fun FlipCard3D(
     onSpeak: () -> Unit,
     modifyCard: @Composable (Modifier) -> Modifier,
     selfTest: Boolean = false,
+    cardAnimation: String = "slide",
 ) {
     // 用 rotationY 做 3D 翻转 (变量名不与 graphicsLayer 属性冲突)
     val flipAngle = when {
@@ -324,6 +328,27 @@ private fun FlipCard3D(
                 .graphicsLayer {
                     rotationY = flipAngle.coerceIn(-180f, 180f)
                     cameraDistance = 12f * density
+                }
+                .graphicsLayer {
+                    // 拖动/切词跟随效果: 按所选动画样式
+                    val dx = offsetX
+                    when (cardAnimation) {
+                        "flip" -> {
+                            rotationZ = dx / 120f          // 轻微倾斜
+                            scaleX = 1f + kotlin.math.abs(dx) / 8000f
+                            scaleY = 1f + kotlin.math.abs(dx) / 8000f
+                        }
+                        "scale" -> {
+                            scaleX = 1f - kotlin.math.abs(dx) / 3000f
+                            scaleY = 1f - kotlin.math.abs(dx) / 3000f
+                        }
+                        "fade" -> {
+                            alpha = 1f - kotlin.math.abs(dx) / 2200f
+                        }
+                        else -> {
+                            // slide: 纯平移
+                        }
+                    }
                 }
                 .clickable(
                     interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
