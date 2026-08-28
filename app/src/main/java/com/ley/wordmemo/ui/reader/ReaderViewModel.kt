@@ -40,6 +40,7 @@ class ReaderViewModel @Inject constructor(
     private val articleRepository: ArticleRepository,
     private val aiClient: AiClient,
     private val settingsRepository: SettingsRepository,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ReaderUiState())
@@ -105,16 +106,24 @@ class ReaderViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
-            // 查数据库缓存
+            // 1) 离线词典优先 (无需 API)
+            com.ley.wordmemo.data.reader.OfflineDict.ensureLoaded(context)
+            com.ley.wordmemo.data.reader.OfflineDict.lookup(clean)?.let { off ->
+                wordCache[lower] = off
+                _state.value = _state.value.copy(wordMeaning = "📖 $off")
+                return@launch
+            }
+            // 2) 数据库缓存 (之前 AI 翻译过的词)
             val cached = articleRepository.findTranslation(lower)
             if (cached != null) {
                 wordCache[lower] = cached.meaning
                 _state.value = _state.value.copy(wordMeaning = cached.meaning)
                 return@launch
             }
+            // 3) 翻译源=ai 且有配置时才走 AI
             val settings = settingsRepository.settings.first()
-            if (!settings.isApiConfigured) {
-                _state.value = _state.value.copy(wordMeaning = "(未配置 AI：无法翻译)")
+            if (settings.translationSource != "ai" || !settings.isApiConfigured) {
+                _state.value = _state.value.copy(wordMeaning = "(词典未收录，可切换 AI 翻译)")
                 return@launch
             }
             val meaning = withContext(Dispatchers.IO) {
@@ -148,8 +157,12 @@ class ReaderViewModel @Inject constructor(
         )
         viewModelScope.launch {
             val settings = settingsRepository.settings.first()
-            if (!settings.isApiConfigured) {
-                _state.value = applyTranslation(index, "（未配置 AI）")
+            // 离线词典优先: 无需 API
+            if (settings.translationSource != "ai" || !settings.isApiConfigured) {
+                val off = withContext(Dispatchers.IO) {
+                    com.ley.wordmemo.data.reader.OfflineDict.translateSentenceOffline(context, s.original)
+                }
+                _state.value = applyTranslation(index, if (off.isBlank()) "（未收录）" else off)
                 return@launch
             }
             val tr = withContext(Dispatchers.IO) {
@@ -185,13 +198,9 @@ class ReaderViewModel @Inject constructor(
         if (!nowOn) return  // 关闭 -> 保留已翻译内容
         viewModelScope.launch {
             val settings = settingsRepository.settings.first()
-            if (!settings.isApiConfigured) {
-                _state.value = _state.value.copy(
-                    wholeTranslated = true,
-                    translatingAll = false,
-                    error = "未配置 AI，无法全文翻译（请到设置填写 API）",
-                )
-                return@launch
+            val useOffline = settings.translationSource != "ai" || !settings.isApiConfigured
+            if (useOffline) {
+                com.ley.wordmemo.data.reader.OfflineDict.ensureLoaded(context)
             }
             // 批量: 全部未翻译的句子
             val idxList = _state.value.sentenceList.indices.toList()
@@ -205,14 +214,18 @@ class ReaderViewModel @Inject constructor(
                     },
                 )
                 val tr = withContext(Dispatchers.IO) {
-                    aiClient.chat(
-                        settings = settings,
-                        history = listOf(
-                            ChatMessage("system", "你是专业翻译。把这句英文翻成通顺地道的中文，只输出译文。"),
-                            ChatMessage("user", s.original),
-                        ),
-                    )
-                }.trim().take(200)
+                    if (useOffline) {
+                        com.ley.wordmemo.data.reader.OfflineDict.translateSentenceOffline(context, s.original)
+                    } else {
+                        aiClient.chat(
+                            settings = settings,
+                            history = listOf(
+                                ChatMessage("system", "你是专业翻译。把这句英文翻成通顺地道的中文，只输出译文。"),
+                                ChatMessage("user", s.original),
+                            ),
+                        ).trim().take(200)
+                    }
+                }
                 _state.value = _state.value.copy(
                     sentenceList = _state.value.sentenceList.mapIndexed { i, it ->
                         if (i == idx) it.copy(translation = tr, translating = false) else it

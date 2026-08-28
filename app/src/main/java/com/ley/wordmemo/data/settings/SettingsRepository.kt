@@ -34,6 +34,7 @@ data class AppSettings(
     val hideMasteredTranslation: Boolean = false,  // 隐藏熟练词翻译(网页版同名)
     val cardAnimation: String = "slide",  // 卡片切换动画: slide/flip/scale/fade
     val uiStyle: String = "monet",   // 界面风格: monet(Material You) | miui(MIUI X)
+    val translationSource: String = "offline",  // 翻译源: offline(内置词典) | ai
 ) {
     val isApiConfigured: Boolean
         get() = apiBaseUrl.isNotBlank() && apiKey.isNotBlank() && apiModel.isNotBlank()
@@ -64,6 +65,7 @@ class SettingsRepository @Inject constructor(
         val hideMasteredTranslation = booleanPreferencesKey("hide_mastered_translation")
         val cardAnimation = stringPreferencesKey("card_animation")
         val uiStyle = stringPreferencesKey("ui_style")
+        val translationSource = stringPreferencesKey("translation_source")
         val speechVoice = stringPreferencesKey("speech_voice")
     }
 
@@ -84,6 +86,7 @@ class SettingsRepository @Inject constructor(
             hideMasteredTranslation = p[Keys.hideMasteredTranslation] ?: false,
             cardAnimation = p[Keys.cardAnimation] ?: "slide",
             uiStyle = p[Keys.uiStyle] ?: "monet",
+            translationSource = p[Keys.translationSource] ?: "offline",
         )
     }
 
@@ -142,5 +145,9 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setUiStyle(style: String) {
         context.dataStore.edit { p -> p[Keys.uiStyle] = style }
+    }
+
+    suspend fun setTranslationSource(source: String) {
+        context.dataStore.edit { p -> p[Keys.translationSource] = source }
     }
 }

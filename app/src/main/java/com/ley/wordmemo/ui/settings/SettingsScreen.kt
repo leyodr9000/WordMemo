@@ -294,6 +294,20 @@ fun SettingsScreen(
 
             // 语音选择
             // 卡片切换动画
+            // 翻译源 (阅读文章用)
+            Text("翻译源", style = MaterialTheme.typography.titleMedium)
+            Text("内置词典离线可用，无需 API；AI 需配置模型", style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(listOf("offline" to "📖 内置词典（离线）", "ai" to "🤖 AI 翻译")) { (key, label) ->
+                    androidx.compose.material3.FilterChip(
+                        selected = settings.translationSource == key,
+                        onClick = { viewModel.updateTranslationSource(key) },
+                        label = { Text(label) },
+                    )
+                }
+            }
+
             Text("卡片切换动画", style = MaterialTheme.typography.titleMedium)
             androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(listOf("slide" to "左右平移", "flip" to "翻转", "scale" to "缩放", "fade" to "淡入淡出")) { (key, label) ->

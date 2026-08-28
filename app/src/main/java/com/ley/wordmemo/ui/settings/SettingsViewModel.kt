@@ -83,6 +83,7 @@ class SettingsViewModel @Inject constructor(
     fun updateHideMasteredTranslation(v: Boolean) = viewModelScope.launch { repository.setHideMasteredTranslation(v) }
     fun updateCardAnimation(v: String) = viewModelScope.launch { repository.setCardAnimation(v) }
     fun updateUiStyle(v: String) = viewModelScope.launch { repository.setUiStyle(v) }
+    fun updateTranslationSource(v: String) = viewModelScope.launch { repository.setTranslationSource(v) }
     fun updateAutoSpeak(v: Boolean) = viewModelScope.launch { repository.updateAutoSpeak(v) }
     fun updateDarkMode(mode: String) = viewModelScope.launch { repository.updateDarkMode(mode) }
     fun updatePrompt(p: String) = viewModelScope.launch { repository.updatePrompt(p) }
