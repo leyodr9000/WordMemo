@@ -94,7 +94,7 @@ fun MultiRing(
             )
             Text(
                 text = "${(pctText * 100).toInt()}%",
-                fontSize = 22.sp,
+                fontSize = 15.sp,
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontFeatureSettings = "tnum",
                 ),

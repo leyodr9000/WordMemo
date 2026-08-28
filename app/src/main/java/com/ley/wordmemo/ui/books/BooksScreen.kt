@@ -124,6 +124,10 @@ fun BooksScreen(
                                 text = { Text("📖 阅读文章") },
                                 onClick = { plusMenuExpanded = false; onOpenImport("reader") },
                             )
+                            DropdownMenuItem(
+                                text = { Text("🤖 AI 助教") },
+                                onClick = { plusMenuExpanded = false; onOpenImport("ai") },
+                            )
                         }
                     }
                 },

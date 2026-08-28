@@ -260,34 +260,26 @@ private fun WordCard(
                 }
             }
 
-            // 释义 (隐藏熟练词翻译时模糊, 点击揭示 - 网页版 toggleRevealDefinition)
+            // 释义: 隐藏熟练词翻译时, 不渲染内容, 用占位提示(点击揭示) - 高度不变
             if (word.partOfSpeech.isNotBlank() || word.meaning.isNotBlank()) {
                 val defText = "${word.partOfSpeech} ${word.meaning}".trim()
-                Text(
-                    text = defText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .padding(start = 36.dp)
-                        .then(
-                            if (shouldBlur && !revealed)
-                                Modifier
-                                    .clickable(enabled = true, onClick = { revealed = true })
-                                    .graphicsLayer {
-                                        alpha = 0.45f
-                                        // 文字模糊: 用半透明+遮罩简化 (完整 blur 需要 RenderEffect)
-                                    }
-                            else if (shouldBlur)
-                                Modifier.clickable(enabled = true, onClick = { revealed = false })
-                            else Modifier
-                        ),
-                )
                 if (shouldBlur && !revealed) {
+                    // 真隐藏: 释义不显示, 占位一行, 点击揭示
                     Text(
-                        "••• 点击揭示释义",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        "👁 点击显示释义",
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .padding(start = 36.dp)
+                            .clickable { revealed = true },
+                    )
+                } else {
+                    Text(
+                        text = defText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(start = 36.dp),
                     )
                 }

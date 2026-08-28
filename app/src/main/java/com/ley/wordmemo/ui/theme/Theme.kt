@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.dp
 
 /**
  * 预设初始配色（种子色对 primary/secondary）。
@@ -76,8 +77,17 @@ fun WordMemoTheme(
     } else {
         MonetPalette.lightScheme(primarySeed, secondarySeed)
     }
+    // Material You 方案: Material3 默认圆角 (与 MIUI 大圆角形成双 UI 差异)
+    val materialShapes = androidx.compose.material3.Shapes(
+        extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
+        small = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+        medium = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+        large = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+        extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+    )
     MaterialTheme(
         colorScheme = colorScheme,
+        shapes = materialShapes,
         content = content,
     )
 }

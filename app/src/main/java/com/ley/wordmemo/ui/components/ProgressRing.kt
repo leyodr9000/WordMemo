@@ -70,7 +70,7 @@ fun ProgressRing(
                 Text(
                     text = "${(animated * 100).toInt()}%",
                     style = MaterialTheme.typography.titleLarge.copy(
-                        fontSize = 22.sp,
+                        fontSize = 15.sp,
                         fontFeatureSettings = "tnum",
                     ),
                     color = MaterialTheme.colorScheme.onSurface,

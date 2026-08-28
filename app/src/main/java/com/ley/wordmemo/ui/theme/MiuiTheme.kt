@@ -8,6 +8,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 /**
  * MIUI X 风格主题:
@@ -60,6 +61,22 @@ private val MiuiDark = darkColorScheme(
 )
 
 /** MIUI 标志性大圆角 */
+/** MIUI 排版: 标题略有加大, 卡片字更舒展 */
+private val MiuiTypography = androidx.compose.material3.Typography(
+    headlineSmall = androidx.compose.material3.Typography().headlineSmall.copy(
+        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+    ),
+    titleLarge = androidx.compose.material3.Typography().titleLarge.copy(
+        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+    ),
+    titleMedium = androidx.compose.material3.Typography().titleMedium.copy(
+        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+    ),
+    bodyLarge = androidx.compose.material3.Typography().bodyLarge.copy(
+        lineHeight = 24.sp,
+    ),
+)
+
 private val MiuiShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
     small = RoundedCornerShape(14.dp),
@@ -76,6 +93,7 @@ fun MiuiXTheme(
     MaterialTheme(
         colorScheme = if (darkTheme) MiuiDark else MiuiLight,
         shapes = MiuiShapes,
+        typography = MiuiTypography,
         content = content,
     )
 }

@@ -9,8 +9,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -24,8 +24,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import com.ley.wordmemo.ui.books.BooksScreen
 import com.ley.wordmemo.ui.home.HomeListScreen
+import com.ley.wordmemo.ui.reader.ReaderScreen
 import com.ley.wordmemo.ui.importwords.ImportScreen
-import com.ley.wordmemo.ui.chat.ChatScreen
 import com.ley.wordmemo.ui.settings.SettingsScreen
 import kotlinx.coroutines.launch
 
@@ -61,12 +61,13 @@ fun MainTabsScreen(
                         onOpenImport = { mode ->
                             when (mode) {
                                 "reader" -> navController.navigate("reader")
+                                "ai" -> navController.navigate("ai?word=&meaning=")
                                 "json" -> {}  // 本地按钮处理
                                 else -> navController.navigate("import?mode=$mode")
                             }
                         },
                     )
-                    2 -> ChatScreen(onBack = null)
+                    2 -> ReaderScreen(onBack = {})
                     3 -> SettingsScreen(onBack = null)
                 }
             }
@@ -87,8 +88,8 @@ fun MainTabsScreen(
             NavigationBarItem(
                 selected = settledPage == 2,
                 onClick = { scope.launch { pagerState.scrollToPage(2) } },
-                icon = { Icon(Icons.Default.SmartToy, null) },
-                label = { Text("AI") },
+                icon = { Icon(Icons.Default.AutoStories, null) },
+                label = { Text("阅读") },
             )
             NavigationBarItem(
                 selected = settledPage == 3,
