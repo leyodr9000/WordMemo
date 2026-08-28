@@ -125,18 +125,16 @@ fun ReaderScreen(
 
     // ===== 点词翻译气泡 =====
     if (state.tappedWord.isNotBlank()) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // 关闭层放最底层 (先声明), 气泡在其上, 避免遮罩挡住气泡
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clickable { viewModel.dismissWordTip() }
-            )
+        // 用 Popup 实现: 不遮正文布局, 也不影响 uiautomator 内容树
+        androidx.compose.ui.window.Popup(
+            alignment = Alignment.TopCenter,
+            offset = androidx.compose.ui.unit.IntOffset(0, 180),
+            onDismissRequest = { viewModel.dismissWordTip() },
+        ) {
             Card(
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 56.dp)
-                    .widthIn(max = 320.dp),
+                    .widthIn(max = 320.dp)
+                    .clickable { viewModel.dismissWordTip() },
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.inverseSurface,
                 ),

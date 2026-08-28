@@ -88,12 +88,9 @@ fun SettingsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(padding),
         ) {
-            // ===== 一级分类菜单 =====
+            // ===== 一级分类菜单 (固定在顶部, 不随内容滚动) =====
             androidx.compose.material3.TabRow(selectedTabIndex = settingsCategory) {
                 listOf("AI 配置", "学习", "外观").forEachIndexed { i, label ->
                     androidx.compose.material3.Tab(
@@ -103,6 +100,15 @@ fun SettingsScreen(
                     )
                 }
             }
+            // ===== 分类内容 (独立滚动) =====
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
 
             if (settingsCategory == 0) {
             // ===== AI API 配置 =====
@@ -503,6 +509,7 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("恢复默认主题") }
             } // end 外观
+            } // end 内容 Column
         }
     }
 
