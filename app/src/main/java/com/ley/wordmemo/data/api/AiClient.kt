@@ -24,6 +24,18 @@ class AiClient @Inject constructor() {
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    companion object {
+        /** Authorization 头: 清理空白/换行 (OkHttp 对头值中的 0x0a 等非法字符会直接抛异常) */
+        private fun authHeader(apiKey: String): String =
+            "Bearer " + apiKey.replace(Regex("\\s"), "")
+
+        /** 清理 Base URL 中的空白并拼接端点路径 */
+        private fun endpoint(baseUrl: String, path: String): String {
+            val b = baseUrl.replace(Regex("\\s"), "").trimEnd('/')
+            return if (b.endsWith(path)) b else b + path
+        }
+    }
+
     private val okHttp = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(120, TimeUnit.SECONDS)
@@ -45,8 +57,7 @@ class AiClient @Inject constructor() {
         require(settings.isApiConfigured) { "请先在设置中配置 AI API" }
 
         val baseUrl = settings.apiBaseUrl.trimEnd('/')
-        val url = if (baseUrl.endsWith("/chat/completions")) baseUrl
-        else "$baseUrl/chat/completions"
+        val url = endpoint(baseUrl, "/chat/completions")
 
         // 图片转 base64 data url
         val base64 = imageFile.readBytes().let {
@@ -76,7 +87,7 @@ class AiClient @Inject constructor() {
 
         val request = Request.Builder()
             .url(url)
-            .addHeader("Authorization", "Bearer ${settings.apiKey}")
+            .addHeader("Authorization", authHeader(settings.apiKey))
             .addHeader("Content-Type", "application/json")
             .post(multimodal.toRequestBody("application/json".toMediaType()))
             .build()
@@ -109,10 +120,10 @@ class AiClient @Inject constructor() {
             "请先配置 Base URL 和 API Key"
         }
         val baseUrl = settings.apiBaseUrl.trimEnd('/')
-        val url = "$baseUrl/models"
+        val url = endpoint(baseUrl, "/models")
         val request = Request.Builder()
             .url(url)
-            .addHeader("Authorization", "Bearer ${settings.apiKey}")
+            .addHeader("Authorization", authHeader(settings.apiKey))
             .addHeader("Content-Type", "application/json")
             .get()
             .build()
@@ -145,8 +156,7 @@ class AiClient @Inject constructor() {
             "请先配置 Base URL 和 API Key"
         }
         val baseUrl = settings.apiBaseUrl.trimEnd('/')
-        val url = if (baseUrl.endsWith("/chat/completions")) baseUrl
-        else "$baseUrl/chat/completions"
+        val url = endpoint(baseUrl, "/chat/completions")
 
         val body = json.encodeToString(
             ChatRequest(
@@ -159,7 +169,7 @@ class AiClient @Inject constructor() {
         )
         val request = Request.Builder()
             .url(url)
-            .addHeader("Authorization", "Bearer ${settings.apiKey}")
+            .addHeader("Authorization", authHeader(settings.apiKey))
             .addHeader("Content-Type", "application/json")
             .post(body.toRequestBody("application/json".toMediaType()))
             .build()

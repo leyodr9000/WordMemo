@@ -248,6 +248,9 @@ fun MiuixSettingsScreen(
                         apiForm.error?.let {
                             Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                         }
+                        apiForm.notice?.let {
+                            Text(it, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
+                        }
                         Button(
                             onClick = { viewModel.saveApi() },
                             enabled = !apiForm.saving,

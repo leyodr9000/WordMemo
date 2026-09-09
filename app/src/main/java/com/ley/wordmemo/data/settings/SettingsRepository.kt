@@ -102,10 +102,13 @@ class SettingsRepository @Inject constructor(
     }
 
     suspend fun updateApi(baseUrl: String, key: String, model: String) {
+        // 清理空白/换行: OkHttp 对请求头值中的 0x0a 会抛
+        // "unexpected char 0x0a ... in authorization value"
+        val ws = Regex("\\s+")
         context.dataStore.edit { p ->
-            p[Keys.apiBaseUrl] = baseUrl.trim()
-            p[Keys.apiKey] = key.trim()
-            p[Keys.apiModel] = model.trim()
+            p[Keys.apiBaseUrl] = baseUrl.replace(ws, "").trimEnd('/')
+            p[Keys.apiKey] = key.replace(ws, "")
+            p[Keys.apiModel] = model.replace(ws, "")
         }
     }
 

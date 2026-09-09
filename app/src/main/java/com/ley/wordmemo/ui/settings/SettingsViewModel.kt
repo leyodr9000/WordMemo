@@ -25,7 +25,11 @@ data class ApiFormState(
     val saving: Boolean = false,
     val saved: Boolean = false,
     val error: String? = null,
+    val notice: String? = null,
 )
+
+/** 输入中的空白/换行清理 (换行混入 Key 会导致 OkHttp 抛 "unexpected char 0x0a ... in authorization value") */
+private val WHITESPACE = Regex("\\s+")
 
 data class ModelsState(
     val loading: Boolean = false,
@@ -70,10 +74,22 @@ class SettingsViewModel @Inject constructor(
             apiForm.value = f.copy(error = "Base URL / API Key / 模型名都不能为空")
             return
         }
+        // 清理空白/换行 (粘贴 Key 时常混入), 否则请求头非法字符直接崩溃
+        val cleanUrl = f.baseUrl.replace(WHITESPACE, "").trimEnd('/')
+        val cleanKey = f.apiKey.replace(WHITESPACE, "")
+        val cleanModel = f.model.replace(WHITESPACE, "")
         viewModelScope.launch {
             apiForm.value = f.copy(saving = true, error = null)
-            repository.updateApi(f.baseUrl.trimEnd('/'), f.apiKey.trim(), f.model.trim())
-            apiForm.value = f.copy(saving = false, saved = true)
+            repository.updateApi(cleanUrl, cleanKey, cleanModel)
+            apiForm.value = f.copy(
+                saving = false,
+                saved = true,
+                baseUrl = cleanUrl,
+                apiKey = cleanKey,
+                model = cleanModel,
+                notice = if (cleanKey != f.apiKey || cleanModel != f.model || cleanUrl != f.baseUrl)
+                    "已自动清理输入中的空白/换行字符" else null,
+            )
         }
     }
 
@@ -123,10 +139,11 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             modelsState.value = ModelsState(loading = true)
             try {
+                // 与 saveApi 一致: 清理空白/换行后再请求
                 val testSettings = com.ley.wordmemo.data.settings.AppSettings(
-                    apiBaseUrl = f.baseUrl.trimEnd('/'),
-                    apiKey = f.apiKey.trim(),
-                    apiModel = f.model,
+                    apiBaseUrl = f.baseUrl.replace(WHITESPACE, "").trimEnd('/'),
+                    apiKey = f.apiKey.replace(WHITESPACE, ""),
+                    apiModel = f.model.replace(WHITESPACE, ""),
                 )
                 val models = withContext(Dispatchers.IO) { aiClient.fetchModels(testSettings) }
                 modelsState.value = ModelsState(models = models)
