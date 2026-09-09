@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.ley.wordmemo.data.model.Word
 import com.ley.wordmemo.data.model.WordStatus
 import com.ley.wordmemo.data.repository.WordRepository
+import com.ley.wordmemo.data.settings.SettingsRepository
+import com.ley.wordmemo.data.stats.StudyStatsRepository
+import com.ley.wordmemo.data.stats.TodayStats
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -31,6 +34,7 @@ data class HomeUiState(
 class HomeViewModel @Inject constructor(
     private val repository: WordRepository,
     private val settingsRepository: com.ley.wordmemo.data.settings.SettingsRepository,
+    private val statsRepository: StudyStatsRepository,
     @ApplicationContext private val context: android.content.Context,
 ) : ViewModel() {
 
@@ -38,13 +42,40 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> = _uiState
 
     /** 隐藏熟练词翻译设置 (参考网页版 hideMasteredTranslation) */
-    val hideMastered: kotlinx.coroutines.flow.StateFlow<Boolean> = settingsRepository.settings
+    val hideMastered: StateFlow<Boolean> = settingsRepository.settings
         .map { it.hideMasteredTranslation }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    /** 当前词书 (空 = 全部)。参考网页版多词书切换 */
+    val activeBook: StateFlow<String> = settingsRepository.settings
+        .map { it.activeBook }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    /** 今日学习统计 (参考网页版进度追踪) */
+    val todayStats: StateFlow<TodayStats> = statsRepository.todayStats
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TodayStats())
+
+    /** 每日目标 */
+    val dailyGoal: StateFlow<Int> = settingsRepository.settings
+        .map { it.dailyGoal }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 20)
+
+    private val bookFlow = settingsRepository.settings
+        .map { it.activeBook }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    /** 按 activeBook 过滤后的全量词列表 (BookNames.normalize: 空=默认词库) */
+    private val bookWords: StateFlow<List<Word>> = combine(
+        repository.allWords, bookFlow,
+    ) { all, book ->
+        if (book.isBlank()) all
+        else all.filter {
+            com.ley.wordmemo.data.model.BookNames.normalize(it.sourceBook) == book
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val words: StateFlow<List<Word>> = combine(
-        _uiState,
-        repository.allWords,
+        _uiState, bookWords,
     ) { state, all ->
         when (val f = state.filter) {
             HomeFilter.All -> all
@@ -53,12 +84,14 @@ class HomeViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val counts: StateFlow<Map<WordStatus, Int>> = combine(
-        repository.countByStatus(WordStatus.NEW),
-        repository.countByStatus(WordStatus.MASTERED),
-        repository.countByStatus(WordStatus.FORGOTTEN),
-    ) { n, m, f -> mapOf(WordStatus.NEW to n, WordStatus.MASTERED to m, WordStatus.FORGOTTEN to f) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+    /** 统计跟随当前词书 (与列表一致) */
+    val counts: StateFlow<Map<WordStatus, Int>> = bookWords.map { list ->
+        mapOf(
+            WordStatus.NEW to list.count { it.status == WordStatus.NEW.dbValue },
+            WordStatus.MASTERED to list.count { it.status == WordStatus.MASTERED.dbValue },
+            WordStatus.FORGOTTEN to list.count { it.status == WordStatus.FORGOTTEN.dbValue },
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     fun setFilter(filter: HomeFilter) {
         _uiState.value = _uiState.value.copy(

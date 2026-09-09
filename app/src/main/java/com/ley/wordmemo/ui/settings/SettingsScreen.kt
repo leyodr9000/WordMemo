@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
@@ -229,22 +231,69 @@ fun SettingsScreen(
                 }
             }
 
+            // ===== AI 助教人设 (参考网页版动态 System Prompt) =====
+            Spacer(Modifier.size(8.dp))
+            Text("AI 助教人设（System Prompt）", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "自定义 AI 助教的教学风格与人设，对话时作为系统提示词生效",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            var persona by remember(settings.chatPersona) {
+                mutableStateOf(settings.chatPersona)
+            }
+            OutlinedTextField(
+                value = persona,
+                onValueChange = { persona = it },
+                minLines = 3,
+                maxLines = 6,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = {
+                    persona = com.ley.wordmemo.data.settings.AppSettings.DEFAULT_CHAT_PERSONA
+                }) { Text("恢复默认人设") }
+                Button(
+                    onClick = { viewModel.updateChatPersona(persona) },
+                    enabled = persona.isNotBlank() && persona != settings.chatPersona,
+                ) {
+                    Icon(Icons.Default.Check, null)
+                    Spacer(Modifier.size(4.dp))
+                    Text("保存人设")
+                }
+            }
+
+            // ===== 对话温度 (参考网页版后台 temperature 配置) =====
+            Spacer(Modifier.size(8.dp))
+            var temp by remember(settings.temperature) {
+                mutableStateOf(settings.temperature.toFloat())
+            }
+            Text(
+                "对话温度：${"%.1f".format(temp)}  （低=稳定严谨，高=发散有趣）",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Slider(
+                value = temp,
+                onValueChange = { temp = it },
+                onValueChangeFinished = { viewModel.updateTemperature(temp.toDouble()) },
+                valueRange = 0f..1.5f,
+            )
+
             } // end AI 配置
 
             if (settingsCategory == 1) {
             // ===== 学习设置 =====
             Text("学习", style = MaterialTheme.typography.titleMedium)
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("每日目标：${settings.dailyGoal}", modifier = Modifier.weight(1f))
+            // 每日目标滑条 (实时预览, 松手保存)
+            var goalValue by remember(settings.dailyGoal) {
+                mutableStateOf(settings.dailyGoal.toFloat())
             }
+            Text("每日目标：${goalValue.toInt()}")
             Slider(
-                value = settings.dailyGoal.toFloat(),
-                onValueChange = { },
-                onValueChangeFinished = { },
+                value = goalValue,
+                onValueChange = { goalValue = it },
+                onValueChangeFinished = { viewModel.updateDailyGoal(goalValue.toInt()) },
                 valueRange = 5f..100f,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -508,6 +557,55 @@ fun SettingsScreen(
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("恢复默认主题") }
+
+            // ===== 自定义背景壁纸 (参考网页版自定义壁纸) =====
+            Spacer(Modifier.size(16.dp))
+            Text("自定义背景壁纸", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "从相册选择一张图片作为全站背景，界面会自动加蒙层保证可读性",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val pickBackground = androidx.activity.compose.rememberLauncherForActivityResult(
+                androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+            ) { uri ->
+                if (uri != null) {
+                    runCatching {
+                        context.contentResolver.takePersistableUriPermission(
+                            uri,
+            android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                        )
+                    }
+                    viewModel.updateBackgroundUri(uri.toString())
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { pickBackground.launch(arrayOf("image/*")) }) {
+                    Icon(Icons.Default.Image, null)
+                    Spacer(Modifier.size(6.dp))
+                    Text("选择背景图")
+                }
+                OutlinedButton(
+                    onClick = { viewModel.updateBackgroundUri("") },
+                    enabled = settings.backgroundUri.isNotBlank(),
+                ) { Text("清除背景") }
+            }
+            if (settings.backgroundUri.isNotBlank()) {
+                Spacer(Modifier.size(8.dp))
+                androidx.compose.foundation.layout.Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp),
+                ) {
+                    coil.compose.AsyncImage(
+                        model = settings.backgroundUri,
+                        contentDescription = "背景预览",
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
             } // end 外观
             } // end 内容 Column
         }

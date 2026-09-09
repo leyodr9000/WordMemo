@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
@@ -31,6 +32,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Switch
@@ -67,6 +69,9 @@ fun HomeListScreen(
     val counts by viewModel.counts.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val hideMastered by viewModel.hideMastered.collectAsStateWithLifecycle()
+    val activeBook by viewModel.activeBook.collectAsStateWithLifecycle()
+    val todayStats by viewModel.todayStats.collectAsStateWithLifecycle()
+    val dailyGoal by viewModel.dailyGoal.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
         SearchBar(
@@ -97,6 +102,24 @@ fun HomeListScreen(
                 checked = hideMastered,
                 onCheckedChange = { viewModel.toggleHideMastered() },
             )
+        }
+
+        // 当前词书提示 (参考网页版多词书: 切换入口在「词书」Tab)
+        if (activeBook.isNotBlank()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.Default.MenuBook, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    "当前词书：$activeBook",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
         // 学习进度统计卡片
@@ -132,6 +155,38 @@ fun HomeListScreen(
                     ProgressStatRow("熟练", counts[WordStatus.MASTERED] ?: 0, total)
                     Spacer(Modifier.size(4.dp))
                     ProgressStatRow("忘记", counts[WordStatus.FORGOTTEN] ?: 0, total)
+                }
+            }
+            // 今日进度 (参考网页版每日目标): 今日已学 X / 目标 Y
+            val goal = if (dailyGoal <= 0) 1 else dailyGoal
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "今日 ${todayStats.reviewedToday}/$goal",
+                    style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),
+                    color = if (todayStats.reviewedToday >= goal)
+                        MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.width(8.dp))
+                LinearProgressIndicator(
+                    progress = {
+                        (todayStats.reviewedToday.toFloat() / goal).coerceIn(0f, 1f)
+                    },
+                    modifier = Modifier.weight(1f).height(6.dp),
+                    color = if (todayStats.reviewedToday >= goal)
+                        MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.tertiary,
+                )
+                if (todayStats.masteredToday > 0) {
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "✓ ${todayStats.masteredToday}",
+                        style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 }
             }
         }

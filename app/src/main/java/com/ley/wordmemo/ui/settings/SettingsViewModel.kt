@@ -87,6 +87,9 @@ class SettingsViewModel @Inject constructor(
     fun updateAutoSpeak(v: Boolean) = viewModelScope.launch { repository.updateAutoSpeak(v) }
     fun updateDarkMode(mode: String) = viewModelScope.launch { repository.updateDarkMode(mode) }
     fun updatePrompt(p: String) = viewModelScope.launch { repository.updatePrompt(p) }
+    fun updateChatPersona(p: String) = viewModelScope.launch { repository.updateChatPersona(p) }
+    fun updateTemperature(t: Double) = viewModelScope.launch { repository.updateTemperature(t) }
+    fun updateBackgroundUri(uri: String) = viewModelScope.launch { repository.updateBackgroundUri(uri) }
 
     /** 应用主题色方案（一级+二级强调色一起存） */
     fun updateTheme(option: com.ley.wordmemo.ui.theme.ThemeColorOption) {

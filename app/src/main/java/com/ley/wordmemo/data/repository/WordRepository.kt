@@ -63,13 +63,22 @@ class WordRepository @Inject constructor(
         return updated
     }
 
-    /** 复习队列：生词+忘记优先，随机取 */
-    suspend fun getStudyQueue(limit: Int = 30): List<Word> {
-        val forgotten = wordDao.getRandomByStatus(WordStatus.FORGOTTEN.dbValue, limit / 2)
-        val fresh = wordDao.getRandomByStatus(WordStatus.NEW.dbValue, limit / 2)
+    /**
+     * 复习队列：生词+忘记优先，随机取。
+     * @param book 当前词书；空 = 全部词库（参考网页版多词书按书学习）
+     */
+    suspend fun getStudyQueue(limit: Int = 30, book: String = ""): List<Word> {
+        val inBook = book.isNotBlank()
+        val forgotten = if (inBook)
+            wordDao.getRandomByStatusInBook(WordStatus.FORGOTTEN.dbValue, book, limit / 2)
+        else wordDao.getRandomByStatus(WordStatus.FORGOTTEN.dbValue, limit / 2)
+        val fresh = if (inBook)
+            wordDao.getRandomByStatusInBook(WordStatus.NEW.dbValue, book, limit / 2)
+        else wordDao.getRandomByStatus(WordStatus.NEW.dbValue, limit / 2)
         val combined = (forgotten + fresh).distinctBy { it.id }
         if (combined.size < limit) {
-            val more = wordDao.getRandom(limit).filter { w -> combined.none { it.id == w.id } }
+            val more = (if (inBook) wordDao.getRandomInBook(book, limit) else wordDao.getRandom(limit))
+                .filter { w -> combined.none { it.id == w.id } }
             return (combined + more).take(limit)
         }
         return combined.take(limit)

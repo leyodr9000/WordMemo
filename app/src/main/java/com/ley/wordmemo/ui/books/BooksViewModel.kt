@@ -3,10 +3,12 @@ package com.ley.wordmemo.ui.books
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ley.wordmemo.data.model.BookStat
+import com.ley.wordmemo.data.reader.OfflineDict
 import com.ley.wordmemo.data.util.BackupHelper
 import com.ley.wordmemo.data.repository.WordRepository
 import com.ley.wordmemo.data.settings.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +22,7 @@ import javax.inject.Inject
 class BooksViewModel @Inject constructor(
     private val repository: WordRepository,
     private val settingsRepository: SettingsRepository,
+    @ApplicationContext private val context: android.content.Context,
 ) : ViewModel() {
 
     private val _activeBook = MutableStateFlow("")
@@ -75,12 +78,36 @@ class BooksViewModel @Inject constructor(
         viewModelScope.launch {
             val (bookName, words) = BackupHelper.parseWordBook(jsonText)
             if (words.isEmpty()) { onDone(0); return@launch }
-            repository.insertAll(words)
+            val enriched = enrichMeanings(words)
+            repository.insertAll(enriched)
             // 自动激活新词书
             val name = bookName.ifBlank { "导入词书" }
             _activeBook.value = name
             settingsRepository.setActiveBook(name)
-            onDone(words.size)
+            onDone(enriched.size)
+        }
+    }
+
+    /** 从 CSV / TSV / 纯文本导入词书 (word,phonetic,meaning[,unit]) */
+    fun importDelimited(text: String, onDone: (Int) -> Unit) {
+        viewModelScope.launch {
+            val words = BackupHelper.parseDelimited(text)
+            if (words.isEmpty()) { onDone(0); return@launch }
+            val enriched = enrichMeanings(words)
+            repository.insertAll(enriched)
+            onDone(enriched.size)
+        }
+    }
+
+    /** 释义缺失时用内置离线词典自动补全 (无需 AI) */
+    private fun enrichMeanings(words: List<com.ley.wordmemo.data.model.Word>): List<com.ley.wordmemo.data.model.Word> {
+        val needFill = words.any { it.meaning.isBlank() }
+        if (!needFill) return words
+        OfflineDict.ensureLoaded(context)
+        return words.map { w ->
+            if (w.meaning.isBlank()) {
+                OfflineDict.lookup(w.word)?.let { w.copy(meaning = it) } ?: w
+            } else w
         }
     }
 

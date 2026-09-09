@@ -23,6 +23,8 @@ data class AppSettings(
     val apiKey: String = "",
     val apiModel: String = "",
     val promptTemplate: String = DEFAULT_PROMPT,
+    val chatPersona: String = DEFAULT_CHAT_PERSONA, // AI 助教人设 (system prompt, 参考网页版动态Prompt)
+    val temperature: Double = 0.7,                  // 对话温度
     val dailyGoal: Int = 20,
     val autoSpeak: Boolean = true,
     val darkMode: String = "system", // system | light | dark
@@ -35,6 +37,7 @@ data class AppSettings(
     val cardAnimation: String = "slide",  // 卡片切换动画: slide/flip/scale/fade
     val uiStyle: String = "monet",   // 界面风格: monet(Material You) | miui(MIUI X)
     val translationSource: String = "offline",  // 翻译源: offline(内置词典) | ai
+    val backgroundUri: String = "",  // 自定义背景壁纸 (content:// 或 https://), 空=无 (参考网页版自定义壁纸)
 ) {
     val isApiConfigured: Boolean
         get() = apiBaseUrl.isNotBlank() && apiKey.isNotBlank() && apiModel.isNotBlank()
@@ -43,6 +46,8 @@ data class AppSettings(
         const val DEFAULT_PROMPT = """请将图片中的生词提取为 JSON 数组，每个元素格式：
 {"word":"单词","phonetic":"音标","partOfSpeech":"词性","meaning":"中文释义","example":"例句","exampleTranslation":"例句翻译"}
 只输出 JSON，不要多余文字。"""
+        const val DEFAULT_CHAT_PERSONA = "你是一位耐心的英语助教。请用生动有趣的中文讲解单词与语法：" +
+            "包括词根词缀、记忆技巧、易混词对比和实用例句，语气友好，篇幅适中。"
     }
 }
 
@@ -55,6 +60,8 @@ class SettingsRepository @Inject constructor(
         val apiKey = stringPreferencesKey("api_key")
         val apiModel = stringPreferencesKey("api_model")
         val prompt = stringPreferencesKey("prompt_template")
+        val chatPersona = stringPreferencesKey("chat_persona")
+        val temperature = stringPreferencesKey("chat_temperature") // 存字符串, 便于序列化 Double
         val dailyGoal = intPreferencesKey("daily_goal")
         val autoSpeak = booleanPreferencesKey("auto_speak")
         val darkMode = stringPreferencesKey("dark_mode")
@@ -67,6 +74,7 @@ class SettingsRepository @Inject constructor(
         val uiStyle = stringPreferencesKey("ui_style")
         val translationSource = stringPreferencesKey("translation_source")
         val speechVoice = stringPreferencesKey("speech_voice")
+        val backgroundUri = stringPreferencesKey("background_uri")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { p ->
@@ -75,6 +83,8 @@ class SettingsRepository @Inject constructor(
             apiKey = p[Keys.apiKey] ?: "",
             apiModel = p[Keys.apiModel] ?: "",
             promptTemplate = p[Keys.prompt] ?: AppSettings.DEFAULT_PROMPT,
+            chatPersona = p[Keys.chatPersona] ?: AppSettings.DEFAULT_CHAT_PERSONA,
+            temperature = p[Keys.temperature]?.toDoubleOrNull() ?: 0.7,
             dailyGoal = p[Keys.dailyGoal] ?: 20,
             autoSpeak = p[Keys.autoSpeak] ?: true,
             darkMode = p[Keys.darkMode] ?: "system",
@@ -87,6 +97,7 @@ class SettingsRepository @Inject constructor(
             cardAnimation = p[Keys.cardAnimation] ?: "slide",
             uiStyle = p[Keys.uiStyle] ?: "monet",
             translationSource = p[Keys.translationSource] ?: "offline",
+            backgroundUri = p[Keys.backgroundUri] ?: "",
         )
     }
 
@@ -100,6 +111,21 @@ class SettingsRepository @Inject constructor(
 
     suspend fun updatePrompt(template: String) {
         context.dataStore.edit { p -> p[Keys.prompt] = template }
+    }
+
+    /** AI 助教人设 (system prompt) */
+    suspend fun updateChatPersona(persona: String) {
+        context.dataStore.edit { p -> p[Keys.chatPersona] = persona }
+    }
+
+    /** 对话温度 */
+    suspend fun updateTemperature(t: Double) {
+        context.dataStore.edit { p -> p[Keys.temperature] = t.toString() }
+    }
+
+    /** 自定义背景壁纸, 空串清除 */
+    suspend fun updateBackgroundUri(uri: String) {
+        context.dataStore.edit { p -> p[Keys.backgroundUri] = uri }
     }
 
     suspend fun updateDailyGoal(goal: Int) {

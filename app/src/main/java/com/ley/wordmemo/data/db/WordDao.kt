@@ -68,6 +68,13 @@ interface WordDao {
     @Query("SELECT * FROM words ORDER BY RANDOM() LIMIT :limit")
     suspend fun getRandom(limit: Int): List<Word>
 
+    // ---- 带词书过滤的随机取词 (学习队列按当前词书隔离) ----
+    @Query("SELECT * FROM words WHERE status = :status AND COALESCE(NULLIF(sourceBook,''),'默认词库') = :book ORDER BY RANDOM() LIMIT :limit")
+    suspend fun getRandomByStatusInBook(status: Int, book: String, limit: Int = 20): List<Word>
+
+    @Query("SELECT * FROM words WHERE COALESCE(NULLIF(sourceBook,''),'默认词库') = :book ORDER BY RANDOM() LIMIT :limit")
+    suspend fun getRandomInBook(book: String, limit: Int): List<Word>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(word: Word): Long
 

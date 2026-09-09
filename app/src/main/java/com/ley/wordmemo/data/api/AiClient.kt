@@ -153,7 +153,8 @@ class AiClient @Inject constructor() {
                 model = settings.apiModel,
                 messages = history,
                 maxTokens = 1000,
-                temperature = 0.7,
+                // 使用设置页配置的温度 (参考网页版后台动态配置)
+                temperature = settings.temperature,
             )
         )
         val request = Request.Builder()

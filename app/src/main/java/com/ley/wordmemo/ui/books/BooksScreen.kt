@@ -87,6 +87,23 @@ fun BooksScreen(
         }
     }
 
+    // CSV / TSV / 纯文本词书导入 (word,phonetic,meaning 支持逗号或 Tab 分隔)
+    val importTextLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: android.net.Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val text = runCatching {
+            context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+        }.getOrNull()
+        if (text.isNullOrBlank()) {
+            showJsonError = "无法读取文件"
+        } else {
+            viewModel.importDelimited(text) { count ->
+                if (count == 0) showJsonError = "没有解析到有效单词（格式：单词,音标,释义 或纯单词列表）"
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -119,6 +136,10 @@ fun BooksScreen(
                             DropdownMenuItem(
                                 text = { Text("📄 导入 JSON 词书") },
                                 onClick = { plusMenuExpanded = false; importLauncher.launch("application/json") },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("📊 导入 CSV/文本词书") },
+                                onClick = { plusMenuExpanded = false; importTextLauncher.launch("text/*") },
                             )
                             DropdownMenuItem(
                                 text = { Text("📖 阅读文章") },

@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -169,12 +170,10 @@ private fun ChatBubble(entry: ChatEntry) {
             ),
         ) {
             Text(
-                text = entry.content + if (entry.streaming) " ▍" else "",
+                entry.content + if (entry.streaming) " ▍" else "",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(12.dp),
             )
         }
     }
 }
-
-private val Int.sp: androidx.compose.ui.unit.TextUnit get() = androidx.compose.ui.unit.TextUnit(this.toFloat(), androidx.compose.ui.unit.TextUnitType.Sp)

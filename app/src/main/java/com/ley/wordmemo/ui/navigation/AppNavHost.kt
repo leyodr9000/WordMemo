@@ -43,6 +43,8 @@ fun AppNavHost(navController: NavHostController) {
         ) { entry ->
             ImportScreen(
                 onBack = { navController.popBackStack() },
+                // 透传入口模式: 从加号菜单进入时自动打开相机/相册
+                initialMode = entry.arguments?.getString("mode") ?: "",
             )
         }
         composable(Routes.READER) {

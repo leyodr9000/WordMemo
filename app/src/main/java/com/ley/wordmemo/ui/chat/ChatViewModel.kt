@@ -51,8 +51,8 @@ class ChatViewModel @Inject constructor(
         if (word.isBlank()) return
         viewModelScope.launch {
             val settings = settingsRepository.settings.first()
-            val sys = "你是单词记忆 App 的英语助教。当前用户在学单词「$word」${if (meaning.isNotBlank()) "（释义：$meaning）" else ""}。" +
-                "请用中文生动解释这个词：词根词缀、记忆技巧、易混词、例句。语气友好，篇幅适中。"
+            val sys = "${settings.chatPersona} 当前用户正在学单词「$word」${if (meaning.isNotBlank()) "（释义：$meaning）" else ""}。" +
+                "请优先围绕这个词展开讲解。"
             _state.value = _state.value.copy(
                 entries = listOf(ChatEntry("system", sys)),
                 input = "帮我讲解「$word」",
@@ -77,13 +77,14 @@ class ChatViewModel @Inject constructor(
                 sending = true,
                 error = null,
             )
-            // 组装历史（去 system 级别，转为 OpenAI messages，保留 system 与最近 N 条）
-            val history = _state.value.entries.dropLast(1) // 去掉流式占位
+            // 组装历史 (保留 system 与最近 N 条)
+            var history = _state.value.entries.dropLast(1) // 去掉流式占位
                 .takeLast(16)
                 .map { ChatMessage(role = it.role, content = it.content) }
+                .toMutableList()
             if (history.none { it.role == "system" }) {
-                // 若无 system（如未设上下文），补默认
-                history + ChatMessage("system", "你是单词记忆 App 的英语助教，用中文讲解英语单词：词根、记忆技巧、例句。")
+                // 无上下文时补默认人设 (参考网页版动态 System Prompt)
+                history.add(0, ChatMessage("system", settings.chatPersona))
             }
             try {
                 val result = withContext(Dispatchers.IO) {

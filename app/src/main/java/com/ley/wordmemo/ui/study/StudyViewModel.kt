@@ -7,8 +7,8 @@ import com.ley.wordmemo.data.model.Word
 import com.ley.wordmemo.data.model.WordStatus
 import com.ley.wordmemo.data.repository.WordRepository
 import com.ley.wordmemo.data.settings.SettingsRepository
+import com.ley.wordmemo.data.stats.StudyStatsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -21,7 +21,9 @@ data class StudyUiState(
     val showAnswer: Boolean = false,
     val selfTest: Boolean = false,   // 自测模式
     val speechVoice: String = "",
+    val autoSpeak: Boolean = true,   // 自动发音 (切换卡片时自动朗读)
     val cardAnimation: String = "slide",  // slide/flip/scale/fade
+    val activeBook: String = "",     // 当前词书 (空=全部)
     val stats: StudyStats = StudyStats(),
 ) {
     val currentWord: Word? get() = queue.getOrNull(currentIndex)
@@ -38,6 +40,7 @@ data class StudyUiState(
 class StudyViewModel @Inject constructor(
     private val repository: WordRepository,
     private val settingsRepository: SettingsRepository,
+    private val statsRepository: StudyStatsRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(StudyUiState())
@@ -49,11 +52,15 @@ class StudyViewModel @Inject constructor(
         viewModelScope.launch {
             val settings = settingsRepository.settings.first()
             _uiState.value = StudyUiState(
-                queue = repository.getStudyQueue(30),
+                // 学习队列按当前词书隔离 (参考网页版多词书按书学习)
+                queue = repository.getStudyQueue(30, settings.activeBook),
                 selfTest = settings.selfTest,
                 speechVoice = settings.speechVoice,
+                autoSpeak = settings.autoSpeak,
                 cardAnimation = settings.cardAnimation,
+                activeBook = settings.activeBook,
             )
+            maybeAutoSpeak()
         }
     }
 
@@ -71,14 +78,19 @@ class StudyViewModel @Inject constructor(
         tts?.speak(word.word, TextToSpeech.QUEUE_FLUSH, null, "word")
     }
 
+    /** 自动发音: 设置开启且切到新词时朗读 (修复此前 autoSpeak 设置不生效的问题) */
+    private fun maybeAutoSpeak() {
+        if (_uiState.value.autoSpeak && _uiState.value.currentWord != null) {
+            onSpeak()
+        }
+    }
+
     fun onKnown() {
         val s = _uiState.value
         val word = s.currentWord ?: return
         viewModelScope.launch {
             repository.markStatus(word, WordStatus.MASTERED)
-            if (settingsRepository.settings.first().autoSpeak) {
-                // 自动发音下一个
-            }
+            statsRepository.recordReview(known = true)
             advance(s.stats.copy(known = s.stats.known + 1))
         }
     }
@@ -88,6 +100,7 @@ class StudyViewModel @Inject constructor(
         val word = s.currentWord ?: return
         viewModelScope.launch {
             repository.markStatus(word, WordStatus.FORGOTTEN)
+            statsRepository.recordReview(known = false)
             advance(s.stats.copy(forgotten = s.stats.forgotten + 1))
         }
     }
@@ -98,6 +111,7 @@ class StudyViewModel @Inject constructor(
         if (s.queue.isEmpty()) return
         val nextIndex = (s.currentIndex + 1) % s.queue.size
         _uiState.value = s.copy(currentIndex = nextIndex, showAnswer = false)
+        maybeAutoSpeak()
     }
 
     /** 上一词（循环） */
@@ -106,12 +120,15 @@ class StudyViewModel @Inject constructor(
         if (s.queue.isEmpty()) return
         val prevIndex = (s.currentIndex - 1 + s.queue.size) % s.queue.size
         _uiState.value = s.copy(currentIndex = prevIndex, showAnswer = false)
+        maybeAutoSpeak()
     }
 
     private suspend fun advance(stats: StudyUiState.StudyStats) {
         val s = _uiState.value
+        if (s.queue.isEmpty()) return
         val nextIndex = (s.currentIndex + 1) % s.queue.size
         _uiState.value = s.copy(currentIndex = nextIndex, showAnswer = false, stats = stats)
+        maybeAutoSpeak()
     }
 
     fun shutdown() {
