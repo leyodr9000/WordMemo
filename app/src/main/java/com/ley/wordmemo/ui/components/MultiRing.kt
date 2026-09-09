@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -84,7 +85,7 @@ fun MultiRing(
                 )
             }
         }
-        // 中央: 总百分比 (带动画)
+        // 中央: 总百分比 (带动画) — 与最内环保持足够间隙, 避免文字贴环
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             val total = animatedLayers.map { it.value }.average().toFloat()
             val pctText by animateFloatAsState(
@@ -94,15 +95,17 @@ fun MultiRing(
             )
             Text(
                 text = "${(pctText * 100).toInt()}%",
-                fontSize = 15.sp,
+                fontSize = 17.sp,
+                lineHeight = 20.sp,
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontFeatureSettings = "tnum",
                 ),
                 color = MaterialTheme.colorScheme.onSurface,
             )
+            Spacer(Modifier.size(2.dp))
             Text(
                 text = centerLabel,
-                fontSize = 11.sp,
+                fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

@@ -70,10 +70,14 @@ Android 单词记忆 App（Kotlin + Jetpack Compose + Material3）：列表/卡�
 
 ## 📜 更新日志
 
-### v0.5.1（修复 API 配置报错）
+### v0.5.1（修复 API 配置报错 + 首页体验重构）
 - ✅ 修复粘贴 API Key 混入换行/空白时，请求头抛 `unexpected char 0x0a ... in authorization value` 的问题
 - ✅ 三层清洗兜底：保存时去除全部空白字符 → DataStore 持久化时再次清洗 → AiClient 构造 `Authorization` 头时兜底清理；Base URL 同样处理
 - ✅ 保存后表单回显「已自动清理输入中的空白/换行字符」提示
+- ✅ **首页重构**：默认内容（词书提示/隐藏翻译开关/进度卡/筛选/开始学习）并入列表滚动区 —— 向上滑动列表自动收起，回到顶部自动出现，列表视野最大化
+- ✅ 「MIUI X」模式首页组件 Miuix 化：进度卡/单词行用 Miuix Card、隐藏翻译用 SuperSwitch、开始学习用 Miuix Button（修复按钮发灰观感）
+- ✅ 进度圆环中心文字与圆环间隙优化（环径 128/环粗 8/字号与留白重调）
+- ✅ Miuix 设置页间距优化（卡片内边距 16dp、行距 14dp、滑条留白）
 
 ### v0.5.0（Miuix HyperOS 重构 + 性能优化，参考 KernelSU 系管理器）
 - ✅ **接入真 Miuix 组件库**（`top.yukonga.miuix.kmp:miuix:0.8.8`，KernelSU/SukiSU 同款 HyperOS 风格组件体系）：

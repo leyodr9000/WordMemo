@@ -51,6 +51,11 @@ class HomeViewModel @Inject constructor(
         .map { it.activeBook }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
+    /** 界面风格 (monet | miui) — 首页双模式渲染用 */
+    val uiStyle: StateFlow<String> = settingsRepository.settings
+        .map { it.uiStyle }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "monet")
+
     /** 今日学习统计 (参考网页版进度追踪) */
     val todayStats: StateFlow<TodayStats> = statsRepository.todayStats
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TodayStats())

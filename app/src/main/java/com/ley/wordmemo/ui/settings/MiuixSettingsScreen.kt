@@ -122,8 +122,8 @@ fun MiuixSettingsScreen(
                         SmallTitle("AI 识图 API（兼容 OpenAI 格式）")
                         Card(modifier = Modifier.fillMaxWidth()) {
                             Column(
-                                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(14.dp),
                             ) {
                                 TextField(
                                     value = apiForm.baseUrl,
@@ -167,7 +167,7 @@ fun MiuixSettingsScreen(
 
                         SmallTitle("可用模型（自动拉取）")
                         Card(modifier = Modifier.fillMaxWidth()) {
-                            Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
@@ -211,8 +211,8 @@ fun MiuixSettingsScreen(
                         SmallTitle("AI 助教人设（System Prompt）")
                         Card(modifier = Modifier.fillMaxWidth()) {
                             Column(
-                                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(14.dp),
                             ) {
                                 var persona by remember(settings.chatPersona) { mutableStateOf(settings.chatPersona) }
                                 OutlinedTextField(
@@ -241,6 +241,7 @@ fun MiuixSettingsScreen(
                                     onValueChange = { temp = it },
                                     onValueChangeFinished = { viewModel.updateTemperature(temp.toDouble()) },
                                     valueRange = 0f..1.5f,
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                 )
                             }
                         }
@@ -293,7 +294,7 @@ fun MiuixSettingsScreen(
 
                         SmallTitle("每日目标")
                         Card(modifier = Modifier.fillMaxWidth()) {
-                            Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                                 var goalValue by remember(settings.dailyGoal) {
                                     mutableStateOf(settings.dailyGoal.toFloat())
                                 }
@@ -303,6 +304,7 @@ fun MiuixSettingsScreen(
                                     onValueChange = { goalValue = it },
                                     onValueChangeFinished = { viewModel.updateDailyGoal(goalValue.toInt()) },
                                     valueRange = 5f..100f,
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                 )
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     listOf(10, 20, 30, 50).forEach { goal ->
@@ -318,8 +320,8 @@ fun MiuixSettingsScreen(
                         SmallTitle("发音 / 动画 / 翻译源")
                         Card(modifier = Modifier.fillMaxWidth()) {
                             Column(
-                                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(14.dp),
                             ) {
                                 ChipRow(
                                     label = "翻译源",
@@ -347,8 +349,8 @@ fun MiuixSettingsScreen(
                         SmallTitle("外观")
                         Card(modifier = Modifier.fillMaxWidth()) {
                             Column(
-                                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(14.dp),
                             ) {
                                 ChipRow(
                                     label = "界面风格（MIUI X = 真 Miuix HyperOS）",
@@ -369,9 +371,9 @@ fun MiuixSettingsScreen(
 
                         SmallTitle("主题色（一级/二级强调色）")
                         Card(modifier = Modifier.fillMaxWidth()) {
-                            Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                                 val selectedOption = ThemeOptions.resolve(settings.primaryColor, settings.secondaryColor)
-                                LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                                     items(ThemeOptions.all.size) { idx ->
                                         val opt = ThemeOptions.all[idx]
                                         val isSelected = opt == selectedOption
@@ -415,7 +417,7 @@ fun MiuixSettingsScreen(
                         SmallTitle("自定义背景壁纸")
                         Card(modifier = Modifier.fillMaxWidth()) {
                             Column(
-                                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 val pickBackground = androidx.activity.compose.rememberLauncherForActivityResult(
