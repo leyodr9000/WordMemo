@@ -6,6 +6,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -54,10 +55,10 @@ fun MultiRing(
         Canvas(modifier = Modifier.size(sizeDp)) {
             val stroke = strokeWidth.toPx()
             val count = animatedLayers.size.coerceAtLeast(1)
-            // 层间距: 明显分开, 避免「重叠」观感
-            val gap = stroke * 0.35f + 2f
+            // 层间距: 收窄以容纳更粗的环
+            val gap = stroke * 0.25f + 1f
             // 最内层半径: 至少留出中央文字空间
-            val minInner = (sizeDp.value * 0.20f).dp.toPx()
+            val minInner = (sizeDp.value * 0.18f).dp.toPx()
             // 最外层半径: 留边距
             val maxRadius = (size.minDimension / 2f) - stroke - 2f
             animatedLayers.forEachIndexed { i, layer ->
@@ -85,8 +86,12 @@ fun MultiRing(
                 )
             }
         }
-        // 中央: 总百分比 (带动画) — 与最内环保持足够间隙, 避免文字贴环
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        // 中央: 百分比 + 标签。整体下移半个标签块高度, 使百分比的视觉中心对准圆心
+        // (两行文字组的几何中心 ≠ 百分比字面中心, 直接居中会显得「偏上」)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.offset(y = 7.dp),
+        ) {
             val total = animatedLayers.map { it.value }.average().toFloat()
             val pctText by animateFloatAsState(
                 targetValue = total,

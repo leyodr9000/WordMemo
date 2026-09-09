@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Book
@@ -81,16 +82,34 @@ fun HomeListScreen(
     val listState = rememberLazyListState()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // ===== 固定搜索框 (不随列表收起) =====
-        SearchBar(
-            query = (uiState.filter as? HomeFilter.Query)?.text ?: "",
-            onQueryChange = { viewModel.setQuery(it) },
-            onSearch = { },
-            onActiveChange = { },
-            active = uiState.isSearching,
-            placeholder = { Text("搜索单词或释义") },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-        ) {}
+        // ===== 固定搜索框 (不随列表收起); MIUI X 模式用 Miuix 输入框 =====
+        if (isMiuix) {
+            top.yukonga.miuix.kmp.basic.TextField(
+                value = (uiState.filter as? HomeFilter.Query)?.text ?: "",
+                onValueChange = { viewModel.setQuery(it) },
+                label = "搜索单词或释义",
+                useLabelAsPlaceholder = true,
+                singleLine = true,
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Search,
+                        null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+            )
+        } else {
+            SearchBar(
+                query = (uiState.filter as? HomeFilter.Query)?.text ?: "",
+                onQueryChange = { viewModel.setQuery(it) },
+                onSearch = { },
+                onActiveChange = { },
+                active = uiState.isSearching,
+                placeholder = { Text("搜索单词或释义") },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+            ) {}
+        }
 
         // 学习进度统计
         val total = (counts[WordStatus.NEW] ?: 0) + (counts[WordStatus.MASTERED] ?: 0) + (counts[WordStatus.FORGOTTEN] ?: 0)
@@ -172,8 +191,8 @@ fun HomeListScreen(
                                 RingLayer("生词", newCount / totalF, MaterialTheme.colorScheme.tertiary),
                                 RingLayer("忘记", forgotten / totalF, MaterialTheme.colorScheme.error),
                             ),
-                            sizeDp = 128.dp,
-                            strokeWidth = 8.dp,
+                            sizeDp = 136.dp,
+                            strokeWidth = 11.dp,
                             centerLabel = "掌握率",
                         )
                         Spacer(Modifier.width(18.dp))
@@ -340,10 +359,10 @@ private fun WordCard(
     onSetStatus: (WordStatus) -> Unit,
     onSpeak: () -> Unit,
 ) {
-    // 隐藏熟练词翻译: 熟练词释义模糊, 点击揭示
+    // 隐藏熟练词翻译: 熟练词释义模糊, 点击显示/再次点击隐藏; 切换开关时重置揭示状态
     val status = WordStatus.from(word.status)
     val shouldBlur = hideTranslation && status == WordStatus.MASTERED
-    var revealed by remember { mutableStateOf(false) }
+    var revealed by remember(word.id, hideTranslation) { mutableStateOf(false) }
     // 行底色随状态 (低饱和区分) — 仅 Material3 模式; Miuix 模式用统一 HyperOS 卡面 + 状态 chips 区分
     val containerColor = when (status) {
         WordStatus.NEW -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.35f)
@@ -352,7 +371,7 @@ private fun WordCard(
     }
     if (isMiuix) {
         MiuixCard(modifier = Modifier.fillMaxWidth(), insideMargin = androidx.compose.foundation.layout.PaddingValues(14.dp)) {
-            WordCardBody(word, shouldBlur, revealed, { revealed = true }, onSetStatus, onSpeak)
+            WordCardBody(word, shouldBlur, revealed, { revealed = !revealed }, onSetStatus, onSpeak)
         }
     } else {
         Card(
@@ -360,7 +379,7 @@ private fun WordCard(
             colors = CardDefaults.cardColors(containerColor = containerColor),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         ) {
-            WordCardBody(word, shouldBlur, revealed, { revealed = true }, onSetStatus, onSpeak)
+            WordCardBody(word, shouldBlur, revealed, { revealed = !revealed }, onSetStatus, onSpeak)
         }
     }
 }
@@ -376,7 +395,7 @@ private fun WordCardBody(
 ) {
     val status = WordStatus.from(word.status)
     Column(modifier = Modifier.fillMaxWidth()) {
-        // 第一行: 发音 + 单词 + 音标 (左), 状态 (右上角小徽章)
+        // 第一行: 发音 + 单词 (左, 弹性截断) + 音标 (右, 限宽截断防溢出)
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onSpeak, modifier = Modifier.size(32.dp)) {
                 Icon(Icons.Default.VolumeUp, "发音", modifier = Modifier.size(18.dp))
@@ -387,7 +406,7 @@ private fun WordCardBody(
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1.6f),
             )
             if (word.phonetic.isNotBlank()) {
                 Spacer(Modifier.width(6.dp))
@@ -395,11 +414,14 @@ private fun WordCardBody(
                     word.phonetic,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                 )
             }
         }
 
-        // 释义: 隐藏熟练词翻译时, 不渲染内容, 用占位提示(点击揭示) - 高度不变
+        // 释义: 隐藏熟练词翻译时占位提示, 点击显示 / 再次点击隐藏
         if (word.partOfSpeech.isNotBlank() || word.meaning.isNotBlank()) {
             val defText = "${word.partOfSpeech} ${word.meaning}".trim()
             if (shouldBlur && !revealed) {
@@ -408,6 +430,17 @@ private fun WordCardBody(
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1,
                     color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .padding(start = 36.dp)
+                        .clickable { onReveal() },
+                )
+            } else if (shouldBlur && revealed) {
+                Text(
+                    text = defText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier
                         .padding(start = 36.dp)
                         .clickable { onReveal() },

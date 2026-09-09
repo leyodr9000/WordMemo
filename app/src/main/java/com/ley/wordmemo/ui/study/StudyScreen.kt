@@ -110,6 +110,23 @@ fun StudyScreen(
     // 拖拽期间用同步 State 记录位移 (KernelSU 实践: 避免逐帧 launch 协程导致掉帧), 松手才交给 Animatable
     var dragX by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
 
+    // 切词入场动画: 下一词从右侧滑入 / 上一词从左侧滑入 (拖拽飞出动画进行中不叠加)
+    var lastIndex by remember { androidx.compose.runtime.mutableIntStateOf(-1) }
+    LaunchedEffect(state.currentIndex) {
+        val idx = state.currentIndex
+        if (lastIndex == -1 || state.queue.isEmpty()) { lastIndex = idx; return@LaunchedEffect }
+        if (offsetX.value != 0f) { lastIndex = idx; return@LaunchedEffect }
+        val size = state.queue.size
+        val isNext = (lastIndex == size - 1 && idx == 0) ||
+            (idx > lastIndex && !(lastIndex == 0 && idx == size - 1))
+        lastIndex = idx
+        offsetX.snapTo(if (isNext) 300f else -300f)
+        offsetX.animateTo(
+            0f,
+            androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 380f),
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(

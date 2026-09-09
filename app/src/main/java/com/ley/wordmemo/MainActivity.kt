@@ -72,7 +72,12 @@ private fun WallpaperLayer(
     content: @Composable () -> Unit,
 ) {
     if (uri.isBlank()) {
-        content()
+        // 无壁纸: 铺主题底色 (修复深色模式下页面透出白色窗口背景)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) { content() }
         return
     }
     val scrim = if (dark) Color(0xFF14161B).copy(alpha = 0.84f)
