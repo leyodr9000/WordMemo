@@ -128,7 +128,43 @@ fun BooksScreen(
                             IconButton(onClick = { plusMenuExpanded = true }) {
                                 Icon(Icons.Default.Add, "导入", tint = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurface)
                             }
-                            BookPlusMenu(plusMenuExpanded, { plusMenuExpanded = false }, onOpenImport, importLauncher, importTextLauncher)
+                            // MIUI X: Miuix ListPopup 弹层 (HyperOS 风格)
+                            top.yukonga.miuix.kmp.extra.SuperListPopup(
+                                show = plusMenuExpanded,
+                                onDismissRequest = { plusMenuExpanded = false },
+                                minWidth = 210.dp,
+                            ) {
+                                top.yukonga.miuix.kmp.basic.ListPopupColumn {
+                                    listOf(
+                                        "📷 拍照识别导入" to "camera",
+                                        "🖼️ 从相册选择" to "gallery",
+                                        "📄 导入 JSON 词书" to "json",
+                                        "📊 导入 CSV/文本词书" to "csv",
+                                        "📖 阅读文章" to "reader",
+                                        "🤖 AI 助教" to "ai",
+                                    ).forEach { (label, mode) ->
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    plusMenuExpanded = false
+                                                    when (mode) {
+                                                        "json" -> importLauncher.launch("application/json")
+                                                        "csv" -> importTextLauncher.launch("text/*")
+                                                        else -> onOpenImport(mode)
+                                                    }
+                                                }
+                                                .padding(horizontal = 16.dp, vertical = 11.dp),
+                                        ) {
+                                            Text(
+                                                label,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurface,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     },
                 )

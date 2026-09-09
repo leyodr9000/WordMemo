@@ -3,10 +3,13 @@ package com.ley.wordmemo.ui.study
 import android.speech.tts.TextToSpeech
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -110,23 +113,6 @@ fun StudyScreen(
     // 拖拽期间用同步 State 记录位移 (KernelSU 实践: 避免逐帧 launch 协程导致掉帧), 松手才交给 Animatable
     var dragX by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
 
-    // 切词入场动画: 下一词从右侧滑入 / 上一词从左侧滑入 (拖拽飞出动画进行中不叠加)
-    var lastIndex by remember { androidx.compose.runtime.mutableIntStateOf(-1) }
-    LaunchedEffect(state.currentIndex) {
-        val idx = state.currentIndex
-        if (lastIndex == -1 || state.queue.isEmpty()) { lastIndex = idx; return@LaunchedEffect }
-        if (offsetX.value != 0f) { lastIndex = idx; return@LaunchedEffect }
-        val size = state.queue.size
-        val isNext = (lastIndex == size - 1 && idx == 0) ||
-            (idx > lastIndex && !(lastIndex == 0 && idx == size - 1))
-        lastIndex = idx
-        offsetX.snapTo(if (isNext) 300f else -300f)
-        offsetX.animateTo(
-            0f,
-            androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 380f),
-        )
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -178,79 +164,76 @@ fun StudyScreen(
                     Text("请先导入单词", style = MaterialTheme.typography.bodyMedium)
                 }
             } else {
-                // ===== 3D 翻转卡片 =====
-                FlipCard3D(
-                    word = word,
-                    flipped = flipped,
-                    flipProgress = flipProgress.value,
-                    offsetX = dragX + offsetX.value,
-                    selfTest = state.selfTest,
-                    cardAnimation = state.cardAnimation,
-                    onFlip = {
-                        flipped = !flipped
-                        flipScope.launch {
-                            flipProgress.animateTo(if (flipped) 1f else 0f, tween(350))
-                        }
+                // ===== 3D 翻转卡片 (AnimatedContent 切词平移动画) =====
+                AnimatedContent(
+                    targetState = state.currentIndex,
+                    transitionSpec = {
+                        val dir = state.lastDirection
+                        val spec = tween<androidx.compose.ui.unit.IntOffset>(230)
+                        (slideInHorizontally(animationSpec = spec) { fullWidth -> dir * fullWidth } togetherWith
+                            slideOutHorizontally(animationSpec = spec) { fullWidth -> -dir * fullWidth })
                     },
-                    onSpeak = { viewModel.onSpeak() },
-                    modifyCard = { mod ->
-                        mod
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .pointerInput(Unit) {
-                                detectHorizontalDragGestures(
-                                    onHorizontalDrag = { change, drag ->
-                                        change.consume()
-                                        // 同步写入 State: 无协程开销, graphicsLayer 延迟读取
-                                        dragX += drag
-                                    },
-                                    onDragEnd = {
-                                        val dx = dragX
-                                        dragX = 0f
-                                        val flyOut = 900f
-                                        if (dx < -80f) {
-                                            dragScope.launch {
-                                                offsetX.snapTo(dx)
-                                                offsetX.animateTo(-flyOut, tween(180))
-                                                viewModel.next()
-                                                flipped = false
-                                                flipProgress.snapTo(0f)
-                                                offsetX.snapTo(flyOut)
-                                                offsetX.animateTo(0f, androidx.compose.animation.core.spring())
-                                            }
-                                        } else if (dx > 80f) {
-                                            dragScope.launch {
-                                                offsetX.snapTo(dx)
-                                                offsetX.animateTo(flyOut, tween(180))
-                                                viewModel.previous()
-                                                flipped = false
-                                                flipProgress.snapTo(0f)
-                                                offsetX.snapTo(-flyOut)
-                                                offsetX.animateTo(0f, androidx.compose.animation.core.spring())
-                                            }
-                                        } else {
-                                            dragScope.launch {
-                                                offsetX.snapTo(dx)
-                                                offsetX.animateTo(0f, androidx.compose.animation.core.spring())
-                                            }
-                                        }
-                                    },
-                                    onDragCancel = {
-                                        val dx = dragX
-                                        dragX = 0f
-                                        dragScope.launch {
-                                            offsetX.snapTo(dx)
-                                            offsetX.animateTo(0f, androidx.compose.animation.core.spring())
-                                        }
-                                    },
-                                )
+                    label = "cardSwitch",
+                ) { idx ->
+                    val animWord = state.queue.getOrNull(idx) ?: word
+                    FlipCard3D(
+                        word = animWord,
+                        flipped = flipped,
+                        flipProgress = flipProgress.value,
+                        offsetX = dragX + offsetX.value,
+                        selfTest = state.selfTest,
+                        cardAnimation = state.cardAnimation,
+                        onFlip = {
+                            flipped = !flipped
+                            flipScope.launch {
+                                flipProgress.animateTo(if (flipped) 1f else 0f, tween(350))
                             }
-                            .graphicsLayer {
-                                // 纯左右平移 (无倾斜, 更干净)
-                                translationX = dragX + offsetX.value
-                            }
-                    },
-                )
+                        },
+                        onSpeak = { viewModel.onSpeak() },
+                        modifyCard = { mod ->
+                            mod
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .pointerInput(Unit) {
+                                    detectHorizontalDragGestures(
+                                        onHorizontalDrag = { change, drag ->
+                                            change.consume()
+                                            // 同步写入 State: 无协程开销, graphicsLayer 延迟读取
+                                            dragX += drag
+                                        },
+                                        onDragEnd = {
+                                            val dx = dragX
+                                            dragX = 0f
+                                            if (dx < -80f || dx > 80f) {
+                                                // 切词交给 AnimatedContent 滑动 (方向由 ViewModel 记录)
+                                                if (dx < 0) viewModel.next() else viewModel.previous()
+                                                flipped = false
+                                                flipScope.launch { flipProgress.snapTo(0f) }
+                                                dragScope.launch { offsetX.snapTo(0f) }
+                                            } else {
+                                                dragScope.launch {
+                                                    offsetX.snapTo(dx)
+                                                    offsetX.animateTo(0f, androidx.compose.animation.core.spring())
+                                                }
+                                            }
+                                        },
+                                        onDragCancel = {
+                                            val dx = dragX
+                                            dragX = 0f
+                                            dragScope.launch {
+                                                offsetX.snapTo(dx)
+                                                offsetX.animateTo(0f, androidx.compose.animation.core.spring())
+                                            }
+                                        },
+                                    )
+                                }
+                                .graphicsLayer {
+                                    // 纯左右平移 (无倾斜, 更干净)
+                                    translationX = dragX + offsetX.value
+                                }
+                        },
+                    )
+                }
 
                 Spacer(Modifier.size(14.dp))
 

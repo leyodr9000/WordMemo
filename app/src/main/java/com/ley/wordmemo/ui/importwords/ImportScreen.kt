@@ -86,11 +86,13 @@ fun ImportScreen(
     var hintText by remember { mutableStateOf("") }
 
     val pickImage = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri != null) {
+        ActivityResultContracts.GetMultipleContents()
+    ) { uris: List<Uri> ->
+        if (uris.isNotEmpty()) {
             hintText = ""
-            copyToCache(uri)?.let { f -> viewModel.onImagePicked(f) }
+            // 多张照片: 全部落盘进队列, 排队识别
+            val files = uris.mapNotNull { uri -> copyToCache(uri) }
+            viewModel.processImages(files)
         } else {
             hintText = "未选择图片"
         }
@@ -102,7 +104,7 @@ fun ImportScreen(
         if (ok) {
             hintText = ""
             cameraUri?.let { uri ->
-                copyToCache(uri)?.let { f -> viewModel.onImagePicked(f) }
+                copyToCache(uri)?.let { f -> viewModel.processImages(listOf(f)) }
             }
         } else {
             // 相机不可用 / 用户取消 / 拍照失败: 必须给反馈, 否则"毫无反应"
@@ -186,14 +188,25 @@ fun ImportScreen(
                 is ImportState.NoApi -> Text("请先在「设置」中配置 AI API", color = MaterialTheme.colorScheme.error)
                 is ImportState.Error -> Text(s.message, color = MaterialTheme.colorScheme.error)
                 is ImportState.Recognizing -> {
-                    // AI 对话框式可视化: 上传→分析→解析 步骤
+                    // 队列识别: 显示第几张 + AI 对话框式步骤 (上传→分析→解析)
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Text("📖 AI 识别中", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "📖 AI 识别中  ${s.index + 1}/${s.total} 张",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        if (s.total > 1) {
+                            Spacer(Modifier.size(6.dp))
+                            Text(
+                                "排队处理，完成后统一预览",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                         Spacer(Modifier.size(16.dp))
                         RecognizeStep(
                             step = 0,
@@ -220,6 +233,14 @@ fun ImportScreen(
                 is ImportState.Preview -> {
                     Text("识别到 ${s.words.size} 个单词，确认后导入：",
                         style = MaterialTheme.typography.titleMedium)
+                    if (s.notice != null) {
+                        Spacer(Modifier.size(4.dp))
+                        Text(
+                            s.notice,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                     Spacer(Modifier.size(8.dp))
                     LazyColumn(
                         modifier = Modifier.weight(1f),
@@ -277,7 +298,9 @@ fun ImportScreen(
                                 )
                                 Spacer(Modifier.size(12.dp))
                                 Button(
-                                    onClick = { viewModel.recognize() },
+                                    onClick = {
+                                        viewModel.currentImage.value?.let { f -> viewModel.processImages(listOf(f)) }
+                                    },
                                     modifier = Modifier.fillMaxWidth(),
                                 ) {
                                     Icon(Icons.Default.Image, null)

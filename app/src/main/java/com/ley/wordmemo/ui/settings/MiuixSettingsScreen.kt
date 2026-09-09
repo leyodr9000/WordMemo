@@ -306,15 +306,6 @@ fun MiuixSettingsScreen(
                                     valueRange = 5f..100f,
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                 )
-                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    listOf(10, 20, 30, 50).forEach { goal ->
-                                        MiuixActionBtn(
-                                            text = "$goal",
-                                            onClick = { viewModel.updateDailyGoal(goal) },
-                                            enabled = settings.dailyGoal != goal,
-                                        )
-                                    }
-                                }
                             }
                         }
 
@@ -324,19 +315,19 @@ fun MiuixSettingsScreen(
                                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(14.dp),
                             ) {
-                                ChipRow(
+                                SuperDropdownRow(
                                     label = "翻译源",
                                     options = listOf("offline" to "📖 内置词典（离线）", "ai" to "🤖 AI 翻译"),
                                     selected = settings.translationSource,
                                     onSelect = { viewModel.updateTranslationSource(it) },
                                 )
-                                ChipRow(
+                                SuperDropdownRow(
                                     label = "卡片切换动画",
                                     options = listOf("slide" to "左右平移", "flip" to "翻转", "scale" to "缩放", "fade" to "淡入淡出"),
                                     selected = settings.cardAnimation,
                                     onSelect = { viewModel.updateCardAnimation(it) },
                                 )
-                                ChipRow(
+                                SuperDropdownRow(
                                     label = "发音音色",
                                     options = listOf("默认" to "", "英音 A" to "en-GB", "英音 B" to "en-GB-x-isa", "美音 A" to "en-US", "美音 B" to "en-US-x-iwz"),
                                     selected = settings.speechVoice,
@@ -353,7 +344,7 @@ fun MiuixSettingsScreen(
                                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(14.dp),
                             ) {
-                                ChipRow(
+                                SuperDropdownRow(
                                     label = "界面风格（MIUI X = 真 Miuix HyperOS）",
                                     options = listOf("monet" to "🌿 Material You", "miui" to "💠 MIUI X"),
                                     selected = settings.uiStyle,
@@ -503,7 +494,7 @@ private fun MiuixActionBtn(
 @Composable
 private fun PickColorRow(label: String, argb: Long, onPick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -519,24 +510,18 @@ private fun PickColorRow(label: String, argb: Long, onPick: () -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ChipRow(
+private fun SuperDropdownRow(
     label: String,
     options: List<Pair<String, String>>,
     selected: String,
     onSelect: (String) -> Unit,
 ) {
-    Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        options.forEach { (key, text) ->
-            androidx.compose.material3.FilterChip(
-                selected = selected == key,
-                onClick = { onSelect(key) },
-                label = { Text(text) },
-            )
-        }
-    }
+    val keys = options.map { it.first }
+    val idx = keys.indexOf(selected).coerceAtLeast(0)
+    top.yukonga.miuix.kmp.extra.SuperDropdown(
+        items = options.map { it.second },
+        selectedIndex = idx,
+        title = label,
+        onSelectedIndexChange = { i -> if (i in keys.indices) onSelect(keys[i]) },
+    )
 }

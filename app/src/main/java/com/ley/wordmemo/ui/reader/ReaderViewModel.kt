@@ -25,6 +25,7 @@ data class ReaderSentence(
     val original: String,
     val translation: String = "",
     var translating: Boolean = false,
+    val fromWhole: Boolean = false,  // 该翻译是否由「全文翻译」产生 (关闭全文开关时隐藏)
 )
 
 data class ReaderUiState(
@@ -171,7 +172,7 @@ class ReaderViewModel @Inject constructor(
             val settings = settingsRepository.settings.first()
             // 整句翻译需要 AI; 未启用时给出明确提示 (点词翻译离线可用)
             if (settings.translationSource != "ai" || !settings.isApiConfigured) {
-                _state.value = applyTranslation(index, "（整句翻译需启用「AI 翻译」；点词可离线查义）")
+                _state.value = applyTranslation(index, "（整句翻译需启用「AI 翻译」；点词可离线查义）", fromWhole = false)
                 return@launch
             }
             val tr = withContext(Dispatchers.IO) {
@@ -183,15 +184,15 @@ class ReaderViewModel @Inject constructor(
                     ),
                 )
             }.trim().take(200)
-            _state.value = applyTranslation(index, tr)
+            _state.value = applyTranslation(index, tr, fromWhole = false)
         }
     }
 
-    private fun applyTranslation(index: Int, tr: String): ReaderUiState {
+    private fun applyTranslation(index: Int, tr: String, fromWhole: Boolean): ReaderUiState {
         val st = _state.value
         return st.copy(
             sentenceList = st.sentenceList.mapIndexed { i, it ->
-                if (i == index) it.copy(translation = tr, translating = false) else it
+                if (i == index) it.copy(translation = tr, translating = false, fromWhole = fromWhole) else it
             },
         )
     }
@@ -236,11 +237,7 @@ class ReaderViewModel @Inject constructor(
                         ),
                     ).trim().take(200)
                 }
-                _state.value = _state.value.copy(
-                    sentenceList = _state.value.sentenceList.mapIndexed { i, it ->
-                        if (i == idx) it.copy(translation = tr, translating = false) else it
-                    },
-                )
+                _state.value = applyTranslation(idx, tr, fromWhole = true)
             }
             _state.value = _state.value.copy(translatingAll = false)
         }

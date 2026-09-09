@@ -80,7 +80,8 @@ fun ReaderScreen(
                             modifier = Modifier.padding(end = 12.dp),
                         ) {
                             Icon(Icons.Default.Translate, null, modifier = Modifier.size(18.dp))
-                            Switch(
+                            // MIUI X: miuix Switch (HyperOS 开关样式)
+                            top.yukonga.miuix.kmp.basic.Switch(
                                 checked = state.wholeTranslated,
                                 onCheckedChange = { viewModel.toggleWholeTranslation() },
                             )
@@ -145,7 +146,7 @@ fun ReaderScreen(
                         isMiuix = isMiuix,
                         tappedWord = state.tappedWord,
                         showTranslation = state.wholeTranslated ||
-                            sentence.translation.isNotBlank(),
+                            (sentence.translation.isNotBlank() && !sentence.fromWhole),
                         onTapWord = { word, ax, ay -> viewModel.onWordTap(word, ax, ay) },
                         onTranslate = { viewModel.translateSentence(idx) },
                     )

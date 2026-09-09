@@ -24,6 +24,7 @@ data class StudyUiState(
     val autoSpeak: Boolean = true,   // 自动发音 (切换卡片时自动朗读)
     val cardAnimation: String = "slide",  // slide/flip/scale/fade
     val activeBook: String = "",     // 当前词书 (空=全部)
+    val lastDirection: Int = 1,      // 最近切词方向: 1=下一词(右入) -1=上一词(左入)
     val stats: StudyStats = StudyStats(),
 ) {
     val currentWord: Word? get() = queue.getOrNull(currentIndex)
@@ -110,7 +111,7 @@ class StudyViewModel @Inject constructor(
         val s = _uiState.value
         if (s.queue.isEmpty()) return
         val nextIndex = (s.currentIndex + 1) % s.queue.size
-        _uiState.value = s.copy(currentIndex = nextIndex, showAnswer = false)
+        _uiState.value = s.copy(currentIndex = nextIndex, showAnswer = false, lastDirection = 1)
         maybeAutoSpeak()
     }
 
@@ -119,7 +120,7 @@ class StudyViewModel @Inject constructor(
         val s = _uiState.value
         if (s.queue.isEmpty()) return
         val prevIndex = (s.currentIndex - 1 + s.queue.size) % s.queue.size
-        _uiState.value = s.copy(currentIndex = prevIndex, showAnswer = false)
+        _uiState.value = s.copy(currentIndex = prevIndex, showAnswer = false, lastDirection = -1)
         maybeAutoSpeak()
     }
 
@@ -127,7 +128,7 @@ class StudyViewModel @Inject constructor(
         val s = _uiState.value
         if (s.queue.isEmpty()) return
         val nextIndex = (s.currentIndex + 1) % s.queue.size
-        _uiState.value = s.copy(currentIndex = nextIndex, showAnswer = false, stats = stats)
+        _uiState.value = s.copy(currentIndex = nextIndex, showAnswer = false, lastDirection = 1, stats = stats)
         maybeAutoSpeak()
     }
 

@@ -80,6 +80,7 @@ fun HomeListScreen(
     val uiStyle by viewModel.uiStyle.collectAsStateWithLifecycle()
     val isMiuix = uiStyle == "miui"
 
+    val searchActive = (uiState.filter as? HomeFilter.Query)?.text?.isNotBlank() == true
     val listState = rememberLazyListState()
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -96,6 +97,7 @@ fun HomeListScreen(
                         Icons.Default.Search,
                         null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 8.dp),
                     )
                 },
                 modifier = Modifier
@@ -129,7 +131,7 @@ fun HomeListScreen(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             // ===== 可收起默认内容 =====
-            if (activeBook.isNotBlank()) {
+            if (!searchActive && activeBook.isNotBlank()) {
                 item(key = "header_book") {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
@@ -146,7 +148,7 @@ fun HomeListScreen(
                 }
             }
 
-            item(key = "header_hide") {
+            if (!searchActive) item(key = "header_hide") {
                 if (isMiuix) {
                     MiuixCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(horizontal = 16.dp, vertical = 4.dp)) {
                         SuperSwitch(
@@ -182,7 +184,7 @@ fun HomeListScreen(
                 }
             }
 
-            item(key = "header_stats") {
+            if (!searchActive) item(key = "header_stats") {
                 HomeCard(isMiuix = isMiuix, modifier = Modifier.fillMaxWidth()) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -261,7 +263,7 @@ fun HomeListScreen(
                 }
             }
 
-            item(key = "header_chips") {
+            if (!searchActive) item(key = "header_chips") {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -279,7 +281,7 @@ fun HomeListScreen(
                 }
             }
 
-            item(key = "header_start") {
+            if (!searchActive) item(key = "header_start") {
                 if (isMiuix) {
                     MiuixButton(
                         onClick = onOpenStudy,
@@ -311,7 +313,8 @@ fun HomeListScreen(
                         Icon(Icons.Default.Book, null, Modifier.size(56.dp), tint = MaterialTheme.colorScheme.outline)
                         Spacer(Modifier.size(12.dp))
                         Text(
-                            "还没有单词\n点击上方「开始学习」或到「词书」导入",
+                            if (searchActive) "没有匹配的单词"
+                            else "还没有单词\n点击上方「开始学习」或到「词书」导入",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
