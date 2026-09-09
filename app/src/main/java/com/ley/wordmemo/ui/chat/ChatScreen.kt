@@ -32,6 +32,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -56,10 +57,20 @@ fun ChatScreen(
         if (wordContext.isNotBlank()) viewModel.setWordContext(wordContext, meaning)
     }
 
-    // 新消息时滚动到底部
-    LaunchedEffect(state.entries.size, state.entries.lastOrNull()?.content?.length) {
+    // 新消息结构性滚动: 条目数变化时立即到底部
+    LaunchedEffect(state.entries.size) {
         val last = listState.layoutInfo.totalItemsCount
         if (last > 0) listState.scrollToItem(last - 1)
+    }
+    // 流式输出跟随: 每 80 字符节流一次 (逐 token 滚动是聊天页掉帧来源)
+    val streamingLen = state.entries.lastOrNull()?.content?.length ?: 0
+    val followCursor = remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    LaunchedEffect(streamingLen) {
+        if (streamingLen - followCursor.intValue >= 80) {
+            followCursor.intValue = streamingLen
+            val last = listState.layoutInfo.totalItemsCount
+            if (last > 0) listState.scrollToItem(last - 1)
+        }
     }
 
     Scaffold(

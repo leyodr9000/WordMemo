@@ -28,11 +28,13 @@ import com.ley.wordmemo.ui.reader.ReaderScreen
 import com.ley.wordmemo.ui.importwords.ImportScreen
 import com.ley.wordmemo.ui.settings.SettingsScreen
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.NavigationBar as MiuixNavigationBar
+import top.yukonga.miuix.kmp.basic.NavigationBarItem as MiuixNavigationBarItem
 
 /**
  * 主 Tab 容器：底部 4 个按钮 = 左右平移切换页面（HorizontalPager + NavigationBar）
  * 性能优化：
- *  - beyondViewportPageCount=0 不预渲染相邻页
+ *  - beyondViewportPageCount=1 预保留相邻页, 左右滑动不重建 (掉帧修复)
  *  - key(page) 让每页重组局部化
  *  - settledPage 用于选中态, 滑动中选中不闪动
  *  - 点击用 scrollToPage 瞬切 (不用 animateScrollToPage, 避免与手势动画叠加掉帧)
@@ -41,6 +43,7 @@ import kotlinx.coroutines.launch
 fun MainTabsScreen(
     onOpenStudy: () -> Unit,
     navController: androidx.navigation.NavHostController,
+    uiStyle: String = "monet",
 ) {
     val pagerState = rememberPagerState(pageCount = { 4 })
     val scope = rememberCoroutineScope()
@@ -51,7 +54,7 @@ fun MainTabsScreen(
             state = pagerState,
             modifier = Modifier.weight(1f),
             userScrollEnabled = true,
-            beyondViewportPageCount = 0,
+            beyondViewportPageCount = 1,
         ) { page ->
             key(page) {
                 when (page) {
@@ -72,31 +75,61 @@ fun MainTabsScreen(
                 }
             }
         }
-        NavigationBar(modifier = Modifier.navigationBarsPadding()) {
-            NavigationBarItem(
-                selected = settledPage == 0,
-                onClick = { scope.launch { pagerState.scrollToPage(0) } },
-                icon = { Icon(Icons.Default.School, null) },
-                label = { Text("列表") },
-            )
-            NavigationBarItem(
-                selected = settledPage == 1,
-                onClick = { scope.launch { pagerState.scrollToPage(1) } },
-                icon = { Icon(Icons.Default.MenuBook, null) },
-                label = { Text("词书") },
-            )
-            NavigationBarItem(
-                selected = settledPage == 2,
-                onClick = { scope.launch { pagerState.scrollToPage(2) } },
-                icon = { Icon(Icons.Default.AutoStories, null) },
-                label = { Text("阅读") },
-            )
-            NavigationBarItem(
-                selected = settledPage == 3,
-                onClick = { scope.launch { pagerState.scrollToPage(3) } },
-                icon = { Icon(Icons.Default.Settings, null) },
-                label = { Text("设置") },
-            )
+        if (uiStyle == "miui") {
+            // 真 Miuix HyperOS 底部导航 (KernelSU 系管理器同款)
+            MiuixNavigationBar {
+                MiuixNavigationBarItem(
+                    selected = settledPage == 0,
+                    onClick = { scope.launch { pagerState.scrollToPage(0) } },
+                    icon = Icons.Default.School,
+                    label = "列表",
+                )
+                MiuixNavigationBarItem(
+                    selected = settledPage == 1,
+                    onClick = { scope.launch { pagerState.scrollToPage(1) } },
+                    icon = Icons.Default.MenuBook,
+                    label = "词书",
+                )
+                MiuixNavigationBarItem(
+                    selected = settledPage == 2,
+                    onClick = { scope.launch { pagerState.scrollToPage(2) } },
+                    icon = Icons.Default.AutoStories,
+                    label = "阅读",
+                )
+                MiuixNavigationBarItem(
+                    selected = settledPage == 3,
+                    onClick = { scope.launch { pagerState.scrollToPage(3) } },
+                    icon = Icons.Default.Settings,
+                    label = "设置",
+                )
+            }
+        } else {
+            NavigationBar(modifier = Modifier.navigationBarsPadding()) {
+                NavigationBarItem(
+                    selected = settledPage == 0,
+                    onClick = { scope.launch { pagerState.scrollToPage(0) } },
+                    icon = { Icon(Icons.Default.School, null) },
+                    label = { Text("列表") },
+                )
+                NavigationBarItem(
+                    selected = settledPage == 1,
+                    onClick = { scope.launch { pagerState.scrollToPage(1) } },
+                    icon = { Icon(Icons.Default.MenuBook, null) },
+                    label = { Text("词书") },
+                )
+                NavigationBarItem(
+                    selected = settledPage == 2,
+                    onClick = { scope.launch { pagerState.scrollToPage(2) } },
+                    icon = { Icon(Icons.Default.AutoStories, null) },
+                    label = { Text("阅读") },
+                )
+                NavigationBarItem(
+                    selected = settledPage == 3,
+                    onClick = { scope.launch { pagerState.scrollToPage(3) } },
+                    icon = { Icon(Icons.Default.Settings, null) },
+                    label = { Text("设置") },
+                )
+            }
         }
     }
 }

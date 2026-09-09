@@ -107,6 +107,8 @@ fun StudyScreen(
 
     // 卡片拖拽位移
     val offsetX = remember { Animatable(0f) }
+    // 拖拽期间用同步 State 记录位移 (KernelSU 实践: 避免逐帧 launch 协程导致掉帧), 松手才交给 Animatable
+    var dragX by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
 
     Scaffold(
         topBar = {
@@ -164,7 +166,7 @@ fun StudyScreen(
                     word = word,
                     flipped = flipped,
                     flipProgress = flipProgress.value,
-                    offsetX = offsetX.value,
+                    offsetX = dragX + offsetX.value,
                     selfTest = state.selfTest,
                     cardAnimation = state.cardAnimation,
                     onFlip = {
@@ -182,13 +184,16 @@ fun StudyScreen(
                                 detectHorizontalDragGestures(
                                     onHorizontalDrag = { change, drag ->
                                         change.consume()
-                                        dragScope.launch { offsetX.snapTo(offsetX.value + drag) }
+                                        // 同步写入 State: 无协程开销, graphicsLayer 延迟读取
+                                        dragX += drag
                                     },
                                     onDragEnd = {
-                                        val dx = offsetX.value
+                                        val dx = dragX
+                                        dragX = 0f
                                         val flyOut = 900f
                                         if (dx < -80f) {
                                             dragScope.launch {
+                                                offsetX.snapTo(dx)
                                                 offsetX.animateTo(-flyOut, tween(180))
                                                 viewModel.next()
                                                 flipped = false
@@ -198,6 +203,7 @@ fun StudyScreen(
                                             }
                                         } else if (dx > 80f) {
                                             dragScope.launch {
+                                                offsetX.snapTo(dx)
                                                 offsetX.animateTo(flyOut, tween(180))
                                                 viewModel.previous()
                                                 flipped = false
@@ -207,18 +213,24 @@ fun StudyScreen(
                                             }
                                         } else {
                                             dragScope.launch {
+                                                offsetX.snapTo(dx)
                                                 offsetX.animateTo(0f, androidx.compose.animation.core.spring())
                                             }
                                         }
                                     },
                                     onDragCancel = {
-                                        dragScope.launch { offsetX.animateTo(0f, androidx.compose.animation.core.spring()) }
+                                        val dx = dragX
+                                        dragX = 0f
+                                        dragScope.launch {
+                                            offsetX.snapTo(dx)
+                                            offsetX.animateTo(0f, androidx.compose.animation.core.spring())
+                                        }
                                     },
                                 )
                             }
                             .graphicsLayer {
                                 // 纯左右平移 (无倾斜, 更干净)
-                                translationX = offsetX.value
+                                translationX = dragX + offsetX.value
                             }
                     },
                 )

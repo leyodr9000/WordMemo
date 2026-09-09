@@ -3,6 +3,7 @@ package com.ley.wordmemo.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
@@ -54,7 +55,6 @@ fun WordMemoTheme(
     darkMode: String = "system",
     customPrimary: Long = 0L,
     customSecondary: Long = 0L,
-    uiStyle: String = "monet",   // monet | miui
     content: @Composable () -> Unit,
 ) {
     val darkTheme = when (darkMode) {
@@ -62,20 +62,19 @@ fun WordMemoTheme(
         "dark" -> true
         else -> isSystemInDarkTheme()
     }
-    // MIUI X 风格: 固定 MIUI 蓝 + 大圆角
-    if (uiStyle == "miui") {
-        MiuiXTheme(darkTheme = darkTheme, content = content)
-        return
-    }
     // 种子色: 用存储的自定义色, 无则默认靛蓝
     val primarySeed = longToSeed(customPrimary) ?: ThemeOptions.Indigo.primary
     val secondarySeed = longToSeed(customSecondary)
 
-    // Monet 派生整套 scheme (深浅各一套), 保证全局可用且可读
+    // Monet 派生整套 scheme (深浅各一套) — remember 化避免每次重组重算 (性能修复)
     val colorScheme = if (darkTheme) {
-        MonetPalette.darkScheme(primarySeed, secondarySeed)
+        remember(customPrimary, customSecondary) {
+            MonetPalette.darkScheme(primarySeed, secondarySeed)
+        }
     } else {
-        MonetPalette.lightScheme(primarySeed, secondarySeed)
+        remember(customPrimary, customSecondary) {
+            MonetPalette.lightScheme(primarySeed, secondarySeed)
+        }
     }
     // Material You 方案: Material3 默认圆角 (与 MIUI 大圆角形成双 UI 差异)
     val materialShapes = androidx.compose.material3.Shapes(

@@ -27,7 +27,7 @@ object Routes {
 }
 
 @Composable
-fun AppNavHost(navController: NavHostController) {
+fun AppNavHost(navController: NavHostController, uiStyle: String = "monet") {
     val backStackEntry by navController.currentBackStackEntryAsState()
 
     NavHost(navController = navController, startDestination = Routes.MAIN) {
@@ -35,6 +35,7 @@ fun AppNavHost(navController: NavHostController) {
             MainTabsScreen(
                 onOpenStudy = { navController.navigate(Routes.STUDY) },
                 navController = navController,
+                uiStyle = uiStyle,
             )
         }
         composable(

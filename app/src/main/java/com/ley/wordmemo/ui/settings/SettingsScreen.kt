@@ -65,6 +65,11 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    // 「MIUI X」界面模式: 真 Miuix (HyperOS) 组件实现
+    if (settings.uiStyle == "miui") {
+        MiuixSettingsScreen(onBack = onBack, viewModel = viewModel)
+        return
+    }
     val apiForm by viewModel.apiForm.collectAsStateWithLifecycle()
     val modelsState by viewModel.modelsState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()

@@ -9,14 +9,14 @@ plugins {
 
 android {
     namespace = "com.ley.wordmemo"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.ley.wordmemo"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 4
-        versionName = "0.4.0"
+        targetSdk = 36
+        versionCode = 5
+        versionName = "0.5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -51,8 +51,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
     buildFeatures {
         compose = true
@@ -112,6 +114,9 @@ dependencies {
 
     // Permissions
     implementation(libs.accompanist.permissions)
+
+    // Miuix (HyperOS 风格 Compose 组件库, KernelSU 系管理器同款)
+    implementation(libs.miuix)
 
     // Debug
     debugImplementation(libs.androidx.ui.tooling)

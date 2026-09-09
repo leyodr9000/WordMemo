@@ -70,6 +70,19 @@ Android 单词记忆 App（Kotlin + Jetpack Compose + Material3）：列表/卡�
 
 ## 📜 更新日志
 
+### v0.5.0（Miuix HyperOS 重构 + 性能优化，参考 KernelSU 系管理器）
+- ✅ **接入真 Miuix 组件库**（`top.yukonga.miuix.kmp:miuix:0.8.8`，KernelSU/SukiSU 同款 HyperOS 风格组件体系）：
+  - 「MIUI X」界面模式重构为真 Miuix 实现：`MiuixTheme` 全局配色 + Miuix 底部导航栏 + Miuix 设置页（`Scaffold`/`SmallTopAppBar`/`TabRow`/`Card`/`SuperSwitch`/`Slider`/`TextField`）
+  - 不再是单纯换色主题；`MaterialTheme` 通过 Miuix→M3 色板映射继承同一套 HyperOS 配色，两套界面风格切换无功能差异
+- ✅ **整体性能优化（掉帧修复）**：
+  - 主题 remember 化：Monet/Miuix 整套配色只在种子色/深浅切换时重算，不再随每次重组重建
+  - 卡片滑动改同步 State 写入 + `graphicsLayer` 延迟读取，去掉逐帧协程启动（原 `Animatable.snapTo` per-delta 模式）
+  - AI 聊天流式滚动按 80 字符节流，消除逐 token 滚动掉帧
+  - Pager `beyondViewportPageCount=1`：相邻 Tab 预保留，左右滑动不重建
+  - **提供 release 签名 APK**：无调试开销，流畅度显著高于 debug 版
+- ✅ **工具链全面升级**：Gradle 9.6.0 / AGP 9.4.0 / Kotlin 2.3.20 / KSP 2.3.11 (KSP2) / Hilt 2.60.1 / Room 2.8.4 / Compose BOM 2026.08.00 / compileSdk 37
+- ✅ `kotlinOptions` 迁移到 `compilerOptions` DSL；AGP 9 以 `builtInKotlin=false` + `newDsl=false` 旁路运行（AGP 10 前需迁移 built-in Kotlin）
+
 ### v0.4.0（参考 AI 新版 Web 端完善）
 - ✅ 词书隔离：首页列表/统计/学习队列按当前词书过滤，首页显示当前词书
 - ✅ 每日学习进度：今日已学/每日目标展示（跨天自动清零），标熟/忘记自动累计
