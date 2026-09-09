@@ -70,6 +70,10 @@ Android 单词记忆 App（Kotlin + Jetpack Compose + Material3）：列表/卡�
 
 ## 📜 更新日志
 
+### v0.5.3（自定义 App 图标）
+- ✅ 启动器图标更换为 AI 生成图（自适应图标：图片全出血作背景层，系统蒙版自动裁形；前景透明）
+- ✅ 资源：`mipmap-xxxhdpi/ic_launcher_bg_image.png`（432×432）+ `mipmap-anydpi-v26/ic_launcher{,_round}.xml` 更新
+
 ### v0.5.2（首页细节修复）
 - ✅ 进度圆环加粗（环径 136 / 环粗 11 / 层间距收窄），百分比文字真正对准圆心（此前整体偏上）
 - ✅ 隐藏熟练词翻译支持点击显示 / 再次点击隐藏；切换开关时自动复位揭示状态
