@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -46,6 +47,11 @@ class BooksViewModel @Inject constructor(
             _activeBook.value = settingsRepository.settings.first().activeBook
         }
     }
+
+    /** 界面风格 (monet | miui) — 词书页双模式渲染用 */
+    val uiStyle: StateFlow<String> = settingsRepository.settings
+        .map { it.uiStyle }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "monet")
 
     fun selectBook(book: String) {
         _activeBook.value = book

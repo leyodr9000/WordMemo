@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -97,7 +98,10 @@ fun HomeListScreen(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
             )
         } else {
             SearchBar(
@@ -191,13 +195,28 @@ fun HomeListScreen(
                                 RingLayer("生词", newCount / totalF, MaterialTheme.colorScheme.tertiary),
                                 RingLayer("忘记", forgotten / totalF, MaterialTheme.colorScheme.error),
                             ),
-                            sizeDp = 136.dp,
-                            strokeWidth = 11.dp,
-                            centerLabel = "掌握率",
+                            sizeDp = 116.dp,
+                            strokeWidth = 12.dp,
                         )
                         Spacer(Modifier.width(18.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("学习进度", style = MaterialTheme.typography.titleMedium)
+                            // 掌握率 (已处理词占比) 移到环外, 与环同行
+                            val masteryPct = ((mastered + forgotten) * 100 / totalF).toInt()
+                            Row(verticalAlignment = Alignment.Bottom) {
+                                Text(
+                                    "$masteryPct%",
+                                    style = MaterialTheme.typography.headlineSmall.copy(
+                                        fontFeatureSettings = "tnum",
+                                    ),
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    "掌握率",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(bottom = 3.dp),
+                                )
+                            }
                             Spacer(Modifier.size(6.dp))
                             ProgressStatRow("生词", counts[WordStatus.NEW] ?: 0, total)
                             Spacer(Modifier.size(4.dp))

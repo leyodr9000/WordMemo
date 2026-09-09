@@ -174,16 +174,12 @@ fun MiuixSettingsScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                 ) {
                                     Text("点击「获取」拉取 /models 列表", style = MaterialTheme.typography.bodySmall)
-                                    Button(
+                                    MiuixActionBtn(
+                                        text = if (modelsState.loading) "拉取中…" else "获取可用模型",
                                         onClick = { viewModel.fetchModels() },
                                         enabled = !modelsState.loading,
-                                    ) {
-                                        if (modelsState.loading) {
-                                            CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
-                                            Spacer(Modifier.width(6.dp))
-                                        }
-                                        Text(if (modelsState.loading) "拉取中…" else "获取可用模型")
-                                    }
+                                        loading = modelsState.loading,
+                                    )
                                 }
                                 modelsState.error?.let {
                                     Spacer(Modifier.size(6.dp))
@@ -222,14 +218,18 @@ fun MiuixSettingsScreen(
                                     maxLines = 6,
                                     modifier = Modifier.fillMaxWidth(),
                                 )
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Button(onClick = {
-                                        persona = com.ley.wordmemo.data.settings.AppSettings.DEFAULT_CHAT_PERSONA
-                                    }) { Text("恢复默认") }
-                                    Button(
+                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    MiuixActionBtn(
+                                        text = "恢复默认",
+                                        onClick = {
+                                            persona = com.ley.wordmemo.data.settings.AppSettings.DEFAULT_CHAT_PERSONA
+                                        },
+                                    )
+                                    MiuixActionBtn(
+                                        text = "保存人设",
                                         onClick = { viewModel.updateChatPersona(persona) },
                                         enabled = persona.isNotBlank() && persona != settings.chatPersona,
-                                    ) { Text("保存人设") }
+                                    )
                                 }
                                 var temp by remember(settings.temperature) { mutableStateOf(settings.temperature.toFloat()) }
                                 Text(
@@ -306,12 +306,13 @@ fun MiuixSettingsScreen(
                                     valueRange = 5f..100f,
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                 )
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                     listOf(10, 20, 30, 50).forEach { goal ->
-                                        Button(
+                                        MiuixActionBtn(
+                                            text = "$goal",
                                             onClick = { viewModel.updateDailyGoal(goal) },
                                             enabled = settings.dailyGoal != goal,
-                                        ) { Text("$goal") }
+                                        )
                                     }
                                 }
                             }
@@ -358,12 +359,13 @@ fun MiuixSettingsScreen(
                                     selected = settings.uiStyle,
                                     onSelect = { viewModel.updateUiStyle(it) },
                                 )
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                     listOf("system" to "跟随系统", "light" to "浅色", "dark" to "深色").forEach { (mode, label) ->
-                                        Button(
+                                        MiuixActionBtn(
+                                            text = label,
                                             onClick = { viewModel.updateDarkMode(mode) },
                                             enabled = settings.darkMode != mode,
-                                        ) { Text(label) }
+                                        )
                                     }
                                 }
                             }
@@ -433,16 +435,16 @@ fun MiuixSettingsScreen(
                                         viewModel.updateBackgroundUri(uri.toString())
                                     }
                                 }
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                     Button(onClick = { pickBackground.launch(arrayOf("image/*")) }) {
                                         Icon(Icons.Default.Image, null)
                                         Spacer(Modifier.width(6.dp))
-                                        Text("选择背景图")
+                                        Text("选择背景图", maxLines = 1)
                                     }
                                     Button(
                                         onClick = { viewModel.updateBackgroundUri("") },
                                         enabled = settings.backgroundUri.isNotBlank(),
-                                    ) { Text("清除背景") }
+                                    ) { Text("清除背景", maxLines = 1) }
                                 }
                                 if (settings.backgroundUri.isNotBlank()) {
                                     coil.compose.AsyncImage(
@@ -474,6 +476,30 @@ fun MiuixSettingsScreen(
     }
 }
 
+/** 统一尺寸的 Miuix 小按钮: 修大小不一 / 文字换行 / 粘连问题 */
+@Composable
+private fun MiuixActionBtn(
+    text: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    loading: Boolean = false,
+) {
+    top.yukonga.miuix.kmp.basic.Button(
+        onClick = onClick,
+        enabled = enabled,
+        minWidth = if (loading) 0.dp else 72.dp,
+        minHeight = 34.dp,
+        cornerRadius = 17.dp,
+        insideMargin = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 7.dp),
+    ) {
+        if (loading) {
+            CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 2.dp)
+            Spacer(Modifier.width(4.dp))
+        }
+        Text(text, style = MaterialTheme.typography.labelMedium, maxLines = 1)
+    }
+}
+
 @Composable
 private fun PickColorRow(label: String, argb: Long, onPick: () -> Unit) {
     Row(
@@ -487,7 +513,7 @@ private fun PickColorRow(label: String, argb: Long, onPick: () -> Unit) {
         )
         Spacer(Modifier.size(10.dp))
         Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-        Button(onClick = onPick) { Text("取色") }
+        MiuixActionBtn(text = "取色", onClick = onPick)
     }
 }
 

@@ -64,6 +64,8 @@ fun BooksScreen(
     val context = LocalContext.current
     val active by viewModel.activeBook.collectAsStateWithLifecycle()
     val loaded by viewModel.loaded.collectAsStateWithLifecycle()
+    val uiStyle by viewModel.uiStyle.collectAsStateWithLifecycle()
+    val isMiuix = uiStyle == "miui"
 
     var showCreate by remember { mutableStateOf(false) }
     var renameTarget by remember { mutableStateOf<BookStat?>(null) }
@@ -106,53 +108,50 @@ fun BooksScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("单词书管理") },
-                navigationIcon = {
-                    if (onBack != null) {
-                        IconButton(onClick = { onBack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+            if (isMiuix) {
+                // MIUI X: 真 Miuix 顶栏
+                top.yukonga.miuix.kmp.basic.SmallTopAppBar(
+                    title = "单词书管理",
+                    navigationIcon = {
+                        if (onBack != null) {
+                            top.yukonga.miuix.kmp.basic.IconButton(onClick = { onBack() }) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "返回",
+                                    tint = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurface,
+                                )
+                            }
                         }
-                    }
-                },
-                actions = {
-                    // 右上角加号: 拍照/相册/JSON 导入 (微信风格)
-                    Box {
-                        IconButton(onClick = { plusMenuExpanded = true }) {
-                            Icon(Icons.Default.Add, "导入")
+                    },
+                    actions = {
+                        Box {
+                            IconButton(onClick = { plusMenuExpanded = true }) {
+                                Icon(Icons.Default.Add, "导入", tint = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurface)
+                            }
+                            BookPlusMenu(plusMenuExpanded, { plusMenuExpanded = false }, onOpenImport, importLauncher, importTextLauncher)
                         }
-                        DropdownMenu(
-                            expanded = plusMenuExpanded,
-                            onDismissRequest = { plusMenuExpanded = false },
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("📷 拍照识别导入") },
-                                onClick = { plusMenuExpanded = false; onOpenImport("camera") },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("🖼️ 从相册选择") },
-                                onClick = { plusMenuExpanded = false; onOpenImport("gallery") },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("📄 导入 JSON 词书") },
-                                onClick = { plusMenuExpanded = false; importLauncher.launch("application/json") },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("📊 导入 CSV/文本词书") },
-                                onClick = { plusMenuExpanded = false; importTextLauncher.launch("text/*") },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("📖 阅读文章") },
-                                onClick = { plusMenuExpanded = false; onOpenImport("reader") },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("🤖 AI 助教") },
-                                onClick = { plusMenuExpanded = false; onOpenImport("ai") },
-                            )
+                    },
+                )
+            } else {
+                TopAppBar(
+                    title = { Text("单词书管理") },
+                    navigationIcon = {
+                        if (onBack != null) {
+                            IconButton(onClick = { onBack() }) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                            }
                         }
-                    }
-                },
-            )
+                    },
+                    actions = {
+                        Box {
+                            IconButton(onClick = { plusMenuExpanded = true }) {
+                                Icon(Icons.Default.Add, "导入")
+                            }
+                            BookPlusMenu(plusMenuExpanded, { plusMenuExpanded = false }, onOpenImport, importLauncher, importTextLauncher)
+                        }
+                    },
+                )
+            }
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showCreate = true }) {
@@ -174,12 +173,20 @@ fun BooksScreen(
             return@Scaffold
         }
 
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            verticalArrangement = Arrangement.spacedBy(if (isMiuix) 8.dp else 0.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                horizontal = if (isMiuix) 12.dp else 0.dp,
+                vertical = if (isMiuix) 8.dp else 0.dp,
+            ),
+        ) {
             // 「全部」入口
             item {
                 BookRow(
                     book = BookStat(book = "全部", total = books.sumOf { it.total }),
                     isActive = active.isEmpty(),
+                    isMiuix = isMiuix,
                     onSelect = { viewModel.selectBook("") },
                     onRename = null,
                     onDelete = null,
@@ -206,6 +213,7 @@ fun BooksScreen(
                     BookRow(
                         book = stat,
                         isActive = active == stat.book,
+                        isMiuix = isMiuix,
                         onSelect = { viewModel.selectBook(stat.book) },
                         onRename = { renameTarget = stat },
                         onDelete = { deleteTarget = stat },
@@ -265,48 +273,90 @@ fun BooksScreen(
     }
 }
 
+/** 加号菜单: 拍照/相册/JSON/CSV/阅读/AI 助教 (双模式共用) */
+@Composable
+private fun BookPlusMenu(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    onOpenImport: (String) -> Unit,
+    importLauncher: androidx.activity.compose.ManagedActivityResultLauncher<String, android.net.Uri?>,
+    importTextLauncher: androidx.activity.compose.ManagedActivityResultLauncher<String, android.net.Uri?>,
+) {
+    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+        DropdownMenuItem(
+            text = { Text("📷 拍照识别导入") },
+            onClick = { onDismiss(); onOpenImport("camera") },
+        )
+        DropdownMenuItem(
+            text = { Text("🖼️ 从相册选择") },
+            onClick = { onDismiss(); onOpenImport("gallery") },
+        )
+        DropdownMenuItem(
+            text = { Text("📄 导入 JSON 词书") },
+            onClick = { onDismiss(); importLauncher.launch("application/json") },
+        )
+        DropdownMenuItem(
+            text = { Text("📊 导入 CSV/文本词书") },
+            onClick = { onDismiss(); importTextLauncher.launch("text/*") },
+        )
+        DropdownMenuItem(
+            text = { Text("📖 阅读文章") },
+            onClick = { onDismiss(); onOpenImport("reader") },
+        )
+        DropdownMenuItem(
+            text = { Text("🤖 AI 助教") },
+            onClick = { onDismiss(); onOpenImport("ai") },
+        )
+    }
+}
+
 @Composable
 private fun BookRow(
     book: BookStat,
     isActive: Boolean,
+    isMiuix: Boolean = false,
     onSelect: () -> Unit,
     onRename: (() -> Unit)?,
     onDelete: (() -> Unit)?,
 ) {
-    ListItem(
-        modifier = Modifier.clickable(onClick = onSelect),
-        leadingContent = {
-            if (isActive) {
-                Icon(
-                    Icons.Default.CheckCircle,
-                    contentDescription = "当前词书",
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            } else {
-                Icon(Icons.Default.MenuBook, contentDescription = null)
-            }
-        },
-        headlineContent = {
-            Text(
-                book.book,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = if (isActive) MaterialTheme.typography.titleMedium
-                else MaterialTheme.typography.bodyLarge,
-            )
-        },
-        supportingContent = {
-            Column {
-                Text("共 ${book.total} 词 · 生词 ${book.newCount} · 熟练 ${book.masteredCount} · 忘记 ${book.forgottenCount}")
-                Spacer(Modifier.size(4.dp))
-                LinearProgressIndicator(
-                    progress = { book.progress },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        },
-        trailingContent = {
-            Row {
+    if (isMiuix) {
+        // MIUI X: Miuix Card 行 (书名 + 统计 + 进度条 + 操作)
+        top.yukonga.miuix.kmp.basic.Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onSelect),
+            insideMargin = androidx.compose.foundation.layout.PaddingValues(14.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (isActive) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = "当前词书",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                } else {
+                    Icon(Icons.Default.MenuBook, contentDescription = null)
+                }
+                Spacer(Modifier.size(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        book.book,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = if (isActive) MaterialTheme.typography.titleMedium
+                        else MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        "共 ${book.total} 词 · 生词 ${book.newCount} · 熟练 ${book.masteredCount} · 忘记 ${book.forgottenCount}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.size(4.dp))
+                    LinearProgressIndicator(
+                        progress = { book.progress },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
                 onRename?.let {
                     IconButton(onClick = it) {
                         Icon(Icons.Default.Edit, contentDescription = "重命名")
@@ -322,8 +372,60 @@ private fun BookRow(
                     }
                 }
             }
-        },
-    )
+        }
+    } else {
+        ListItem(
+            modifier = Modifier.clickable(onClick = onSelect),
+            leadingContent = {
+                if (isActive) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = "当前词书",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                } else {
+                    Icon(Icons.Default.MenuBook, contentDescription = null)
+                }
+            },
+            headlineContent = {
+                Text(
+                    book.book,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = if (isActive) MaterialTheme.typography.titleMedium
+                    else MaterialTheme.typography.bodyLarge,
+                )
+            },
+            supportingContent = {
+                Column {
+                    Text("共 ${book.total} 词 · 生词 ${book.newCount} · 熟练 ${book.masteredCount} · 忘记 ${book.forgottenCount}")
+                    Spacer(Modifier.size(4.dp))
+                    LinearProgressIndicator(
+                        progress = { book.progress },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            trailingContent = {
+                Row {
+                    onRename?.let {
+                        IconButton(onClick = it) {
+                            Icon(Icons.Default.Edit, contentDescription = "重命名")
+                        }
+                    }
+                    onDelete?.let {
+                        IconButton(onClick = it) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "删除",
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
+            },
+        )
+    }
 }
 
 @Composable

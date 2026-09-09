@@ -70,6 +70,13 @@ Android 单词记忆 App（Kotlin + Jetpack Compose + Material3）：列表/卡�
 
 ## 📜 更新日志
 
+### v0.5.4（Miuix 覆盖全页面 + 按钮体系规范）
+- ✅ **词书页 Miuix 化**：Miuix 顶栏 + 加号菜单 + Miuix Card 词书行（书名/统计/进度/操作统一卡面）
+- ✅ **阅读页 Miuix 化**：Miuix 顶栏 + 全文翻译开关 + 句子卡 Miuix Card
+- ✅ 进度圆环不再内置文字：百分比 + 掌握率移到环外右侧统计区顶部（字号层级重排）
+- ✅ Miuix 模式下设置页按钮体系统一（34dp 高 / 单行文本 / loading 单行），修复「获取可用模型」双行与按钮粘连、大小不一
+- ✅ Miuix 模式首页搜索框避开状态栏重叠
+
 ### v0.5.3（自定义 App 图标）
 - ✅ 启动器图标更换为 AI 生成图（自适应图标：图片全出血作背景层，系统蒙版自动裁形；前景透明）
 - ✅ 资源：`mipmap-xxxhdpi/ic_launcher_bg_image.png`（432×432）+ `mipmap-anydpi-v26/ic_launcher{,_round}.xml` 更新

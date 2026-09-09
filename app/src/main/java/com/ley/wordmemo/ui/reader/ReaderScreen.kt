@@ -51,6 +51,8 @@ fun ReaderScreen(
     viewModel: ReaderViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val uiStyle by viewModel.uiStyle.collectAsStateWithLifecycle()
+    val isMiuix = uiStyle == "miui"
 
     LaunchedEffect(article?.id ?: -1L) {
         if (article != null) viewModel.loadArticle(article)
@@ -59,24 +61,52 @@ fun ReaderScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(article?.title ?: "文章阅读") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
-                    }
-                },
-                actions = {
-                    // 全文翻译开关
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Translate, null, modifier = Modifier.size(18.dp))
-                        Switch(
-                            checked = state.wholeTranslated,
-                            onCheckedChange = { viewModel.toggleWholeTranslation() },
-                        )
-                    }
-                },
-            )
+            if (isMiuix) {
+                // MIUI X: 真 Miuix 顶栏 + 全文翻译开关
+                top.yukonga.miuix.kmp.basic.SmallTopAppBar(
+                    title = article?.title ?: "文章阅读",
+                    navigationIcon = {
+                        top.yukonga.miuix.kmp.basic.IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                "返回",
+                                tint = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurface,
+                            )
+                        }
+                    },
+                    actions = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(end = 12.dp),
+                        ) {
+                            Icon(Icons.Default.Translate, null, modifier = Modifier.size(18.dp))
+                            Switch(
+                                checked = state.wholeTranslated,
+                                onCheckedChange = { viewModel.toggleWholeTranslation() },
+                            )
+                        }
+                    },
+                )
+            } else {
+                TopAppBar(
+                    title = { Text(article?.title ?: "文章阅读") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
+                        }
+                    },
+                    actions = {
+                        // 全文翻译开关
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Translate, null, modifier = Modifier.size(18.dp))
+                            Switch(
+                                checked = state.wholeTranslated,
+                                onCheckedChange = { viewModel.toggleWholeTranslation() },
+                            )
+                        }
+                    },
+                )
+            }
         },
     ) { padding ->
         Column(
@@ -112,6 +142,7 @@ fun ReaderScreen(
                 itemsIndexed(state.sentenceList) { idx, sentence ->
                     SentenceCard(
                         sentence = sentence,
+                        isMiuix = isMiuix,
                         tappedWord = state.tappedWord,
                         showTranslation = state.wholeTranslated ||
                             sentence.translation.isNotBlank(),
@@ -162,18 +193,13 @@ fun ReaderScreen(
 @Composable
 private fun SentenceCard(
     sentence: ReaderSentence,
+    isMiuix: Boolean = false,
     tappedWord: String,
     showTranslation: Boolean,
     onTapWord: (String, Float, Float) -> Unit,
     onTranslate: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
+    val cardContent: @Composable () -> Unit = {
         Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
             // 原文：点击单词弹翻译气泡
             WordSpans(
@@ -205,6 +231,20 @@ private fun SentenceCard(
                 }
             }
         }
+    }
+    if (isMiuix) {
+        top.yukonga.miuix.kmp.basic.Card(
+            modifier = Modifier.fillMaxWidth(),
+            insideMargin = androidx.compose.foundation.layout.PaddingValues(0.dp),
+        ) { cardContent() }
+    } else {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        ) { cardContent() }
     }
 }
 

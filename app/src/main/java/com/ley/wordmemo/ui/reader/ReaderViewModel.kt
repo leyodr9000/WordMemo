@@ -11,8 +11,11 @@ import com.ley.wordmemo.data.settings.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -61,6 +64,15 @@ class ReaderViewModel @Inject constructor(
             }
         }
     }
+
+    /** 界面风格 (monet | miui) — 阅读页双模式渲染用 */
+    val uiStyle: kotlinx.coroutines.flow.StateFlow<String> = settingsRepository.settings
+        .map { it.uiStyle }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            "monet",
+        )
 
     /** 无参进入: 自动加载最新一篇文章 */
     fun loadLatest() {
