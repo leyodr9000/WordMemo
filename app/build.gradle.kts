@@ -24,9 +24,23 @@ android {
         }
     }
 
+    signingConfigs {
+        create("app") {
+            // 项目专属签名 (随仓库分发, 保证任意机器构建的 APK 签名一致, 可互相覆盖安装)
+            storeFile = rootProject.file("keystore/wordmemo.keystore")
+            storePassword = "wordmemo"
+            keyAlias = "wordmemo"
+            keyPassword = "wordmemo"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("app")
+        }
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("app")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

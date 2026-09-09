@@ -50,6 +50,15 @@ Android 单词记忆 App（Kotlin + Jetpack Compose + Material3）：列表/卡�
 2. `./gradlew assembleDebug`
 3. 产物：`app/build/outputs/apk/debug/app-debug.apk`
 
+## ✍️ 签名说明
+
+- 项目使用**仓库内置的项目专属 keystore** 签名：`keystore/wordmemo.keystore`
+  - alias：`wordmemo`，store/key 密码：`wordmemo`（debug/社区发行惯例，随仓库分发）
+  - `debug` 与 `release` 构建均使用该签名
+- **任何机器**上用本仓库构建出的 APK 签名一致，可直接互相覆盖安装升级
+- 若从 v0.3.8 及更早版本升级：早期 APK 由原开发机 debug 密钥签名，与本签名不一致，需**先卸载旧版再安装**（旧版本地数据会清空）
+- 请勿更换该 keystore，否则又将出现「签名不一致」无法覆盖安装的问题
+
 ## ⚙️ AI 配置
 
 设置 → AI 配置：
