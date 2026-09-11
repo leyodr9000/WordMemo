@@ -15,8 +15,8 @@ android {
         applicationId = "com.ley.wordmemo"
         minSdk = 26
         targetSdk = 36
-        versionCode = 10
-        versionName = "0.5.5"
+        versionCode = 11
+        versionName = "0.5.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -62,6 +62,16 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            all {
+                it.jvmArgs("-Xmx2g")
+                // miuix 0.8.8 字节码为 Java 21 (class v65), 测试 JVM 必须 >= 21
+                it.executable = "C:\\Program Files\\Android\\Android Studio\\jbr\\bin\\java.exe"
+            }
         }
     }
 }
@@ -117,6 +127,17 @@ dependencies {
 
     // Miuix (HyperOS 风格 Compose 组件库, KernelSU 系管理器同款)
     implementation(libs.miuix)
+
+    // ===== JVM 冒烟测试 (Robolectric, 替代模拟器) =====
+    testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.junit)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.hilt.android.testing)
+    kspTest(libs.hilt.compiler)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.androidx.compose.ui.test.manifest)
 
     // Debug
     debugImplementation(libs.androidx.ui.tooling)

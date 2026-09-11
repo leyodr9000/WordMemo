@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -114,7 +115,8 @@ fun MiuixSettingsScreen(
                     .fillMaxWidth()
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .testTag("miuix_settings_root"),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 when (tab) {
@@ -344,12 +346,18 @@ fun MiuixSettingsScreen(
                                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(14.dp),
                             ) {
-                                SuperDropdownRow(
-                                    label = "界面风格（MIUI X = 真 Miuix HyperOS）",
-                                    options = listOf("monet" to "🌿 Material You", "miui" to "💠 MIUI X"),
-                                    selected = settings.uiStyle,
-                                    onSelect = { viewModel.updateUiStyle(it) },
-                                )
+                                // 界面风格: 即时按钮 (不用弹层) —— 切模式会重建整个界面,
+                                // 弹层 + 界面重建共存会导致闪退 (真机已复现)
+                                Text("界面风格（MIUI X = 真 Miuix HyperOS）", style = MaterialTheme.typography.labelMedium)
+                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    listOf("monet" to "🌿 Material You", "miui" to "💠 MIUI X").forEach { (key, label) ->
+                                        MiuixActionBtn(
+                                            text = label,
+                                            onClick = { viewModel.updateUiStyle(key) },
+                                            enabled = settings.uiStyle != key,
+                                        )
+                                    }
+                                }
                                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                     listOf("system" to "跟随系统", "light" to "浅色", "dark" to "深色").forEach { (mode, label) ->
                                         MiuixActionBtn(
@@ -467,8 +475,7 @@ fun MiuixSettingsScreen(
     }
 }
 
-/** 统一尺寸的 Miuix 小按钮: 修大小不一 / 文字换行 / 粘连问题 */
-@Composable
+/** 统一尺寸的 Miuix 小按钮: 修大小不一 / 文字换行 / 粘连问题 */@Composable
 private fun MiuixActionBtn(
     text: String,
     onClick: () -> Unit,
@@ -510,7 +517,7 @@ private fun PickColorRow(label: String, argb: Long, onPick: () -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SuperDropdownRow(
+internal fun SuperDropdownRow(
     label: String,
     options: List<Pair<String, String>>,
     selected: String,
@@ -522,6 +529,8 @@ private fun SuperDropdownRow(
         items = options.map { it.second },
         selectedIndex = idx,
         title = label,
+        // 弹层就地渲染: 绕开 root-scaffold 挂载路径 (该路径与界面切换/嵌套场景冲突会闪退)
+        renderInRootScaffold = false,
         onSelectedIndexChange = { i -> if (i in keys.indices) onSelect(keys[i]) },
     )
 }

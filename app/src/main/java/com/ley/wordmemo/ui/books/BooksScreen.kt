@@ -128,11 +128,12 @@ fun BooksScreen(
                             IconButton(onClick = { plusMenuExpanded = true }) {
                                 Icon(Icons.Default.Add, "导入", tint = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurface)
                             }
-                            // MIUI X: Miuix ListPopup 弹层 (HyperOS 风格)
+                            // MIUI X: Miuix ListPopup 弹层 (HyperOS 风格) —— 就地渲染
                             top.yukonga.miuix.kmp.extra.SuperListPopup(
                                 show = plusMenuExpanded,
                                 onDismissRequest = { plusMenuExpanded = false },
                                 minWidth = 210.dp,
+                                renderInRootScaffold = false,
                             ) {
                                 top.yukonga.miuix.kmp.basic.ListPopupColumn {
                                     listOf(

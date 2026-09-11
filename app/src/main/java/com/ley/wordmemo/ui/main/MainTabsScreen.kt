@@ -22,6 +22,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import com.ley.wordmemo.ui.books.BooksScreen
 import com.ley.wordmemo.ui.home.HomeListScreen
 import com.ley.wordmemo.ui.reader.ReaderScreen
@@ -83,24 +84,28 @@ fun MainTabsScreen(
                     onClick = { scope.launch { pagerState.scrollToPage(0) } },
                     icon = Icons.Default.School,
                     label = "列表",
+                    modifier = Modifier.testTag("nav_列表"),
                 )
                 MiuixNavigationBarItem(
                     selected = settledPage == 1,
                     onClick = { scope.launch { pagerState.scrollToPage(1) } },
                     icon = Icons.Default.MenuBook,
                     label = "词书",
+                    modifier = Modifier.testTag("nav_词书"),
                 )
                 MiuixNavigationBarItem(
                     selected = settledPage == 2,
                     onClick = { scope.launch { pagerState.scrollToPage(2) } },
                     icon = Icons.Default.AutoStories,
                     label = "阅读",
+                    modifier = Modifier.testTag("nav_阅读"),
                 )
                 MiuixNavigationBarItem(
                     selected = settledPage == 3,
                     onClick = { scope.launch { pagerState.scrollToPage(3) } },
                     icon = Icons.Default.Settings,
                     label = "设置",
+                    modifier = Modifier.testTag("nav_设置"),
                 )
             }
         } else {
@@ -110,24 +115,28 @@ fun MainTabsScreen(
                     onClick = { scope.launch { pagerState.scrollToPage(0) } },
                     icon = { Icon(Icons.Default.School, null) },
                     label = { Text("列表") },
+                    modifier = Modifier.testTag("nav_列表"),
                 )
                 NavigationBarItem(
                     selected = settledPage == 1,
                     onClick = { scope.launch { pagerState.scrollToPage(1) } },
                     icon = { Icon(Icons.Default.MenuBook, null) },
                     label = { Text("词书") },
+                    modifier = Modifier.testTag("nav_词书"),
                 )
                 NavigationBarItem(
                     selected = settledPage == 2,
                     onClick = { scope.launch { pagerState.scrollToPage(2) } },
                     icon = { Icon(Icons.Default.AutoStories, null) },
                     label = { Text("阅读") },
+                    modifier = Modifier.testTag("nav_阅读"),
                 )
                 NavigationBarItem(
                     selected = settledPage == 3,
                     onClick = { scope.launch { pagerState.scrollToPage(3) } },
                     icon = { Icon(Icons.Default.Settings, null) },
                     label = { Text("设置") },
+                    modifier = Modifier.testTag("nav_设置"),
                 )
             }
         }

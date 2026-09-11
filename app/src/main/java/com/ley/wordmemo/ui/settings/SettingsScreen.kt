@@ -52,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -103,6 +104,7 @@ fun SettingsScreen(
                     androidx.compose.material3.Tab(
                         selected = settingsCategory == i,
                         onClick = { settingsCategory = i },
+                        modifier = Modifier.testTag("settings_tab_$i"),
                         text = { Text(label) },
                     )
                 }
@@ -131,14 +133,14 @@ fun SettingsScreen(
                 onValueChange = viewModel::onBaseUrlChange,
                 label = { Text("Base URL") },
                 placeholder = { Text("https://api.openai.com/v1") },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag("api_base"),
                 singleLine = true,
             )
             OutlinedTextField(
                 value = apiForm.apiKey,
                 onValueChange = viewModel::onKeyChange,
                 label = { Text("API Key") },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag("api_key"),
                 singleLine = true,
                 visualTransformation = if (keyVisible)
                     androidx.compose.ui.text.input.VisualTransformation.None
@@ -161,7 +163,7 @@ fun SettingsScreen(
                 onValueChange = viewModel::onModelChange,
                 label = { Text("模型名") },
                 placeholder = { Text("gpt-4o-mini") },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag("api_model"),
                 singleLine = true,
             )
 
